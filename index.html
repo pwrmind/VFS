@@ -3,272 +3,287 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Виртуальная киностудия — Мир · Персонаж · Камера</title>
+<title>🎬 Виртуальная киностудия</title>
 <style>
-  * { box-sizing: border-box; }
-  :root {
-    --bg: #14141b; --panel: #1f1f2a; --panel2: #191922; --line: #32323f;
-    --accent: #4fc3f7; --world: #2e7d32; --actor: #ef6c00; --camera: #1565c0;
-    --text: #e2e2ea; --dim: #9a9aac;
+  *{box-sizing:border-box}
+  :root{
+    --bg:#0f0f14;--panel:#1a1a22;--panel2:#22222c;--panel3:#2a2a36;
+    --border:#2e2e3e;--accent:#4fc3f7;--accent2:#29b6f6;
+    --text:#e0e0ea;--text-dim:#8a8a9a;
+    --world:#2e7d32;--actor:#ef6c00;--camera:#1565c0;
+    --ok:#66bb6a;--warn:#ffa726;--danger:#ef5350;
   }
-  body {
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    background: var(--bg); color: var(--text);
-    margin: 0; padding: 12px; display: flex; flex-direction: column; gap: 12px;
-    min-height: 100vh;
-  }
-  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
-  header h1 { font-size: 17px; margin: 0; color: var(--accent); letter-spacing: .3px; }
-  header .sub { font-size: 12px; color: var(--dim); }
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--bg);color:var(--text);
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;font-size:13px}
+  .app{display:grid;grid-template-rows:44px minmax(0,1fr) 260px;height:100vh;overflow:hidden}
 
-  .workspace { display: flex; gap: 12px; min-height: 520px; height: 66vh; }
-  .panel {
-    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
-    padding: 12px; display: flex; flex-direction: column; gap: 10px; min-width: 0;
-  }
-  .panel h3 {
-    margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .6px;
-    color: var(--accent); display: flex; justify-content: space-between; align-items: center; gap: 8px;
-  }
-  .badge {
-    font-family: ui-monospace, monospace; font-size: 11px; color: #ffb74d;
-    background: #14141c; border: 1px solid var(--line); padding: 2px 8px; border-radius: 20px;
-    white-space: nowrap;
-  }
+  /* === Header === */
+  .header{display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--panel);
+    border-bottom:1px solid var(--border);min-height:0}
+  .header h1{font-size:15px;margin:0;color:var(--accent);white-space:nowrap}
+  .header .project-name{background:var(--bg);border:1px solid var(--border);color:var(--text);
+    padding:5px 10px;border-radius:4px;font-size:13px;min-width:180px}
+  .header .project-name:focus{outline:none;border-color:var(--accent)}
+  .header .spacer{flex:1}
+  .header button{background:var(--panel2);color:var(--text);border:1px solid var(--border);
+    padding:6px 12px;border-radius:4px;cursor:pointer;font-size:12px;white-space:nowrap;
+    display:inline-flex;align-items:center;gap:5px;font-family:inherit}
+  .header button:hover{background:var(--accent);color:#0a0a12;border-color:var(--accent)}
+  .header button.primary{background:var(--accent);color:#0a0a12;border-color:var(--accent)}
+  .header button.primary:hover{background:var(--accent2)}
+  .header button:disabled{opacity:.4;cursor:not-allowed;background:var(--panel2)}
 
-  .preview-panel { width: 316px; flex-shrink: 0; align-items: stretch; }
-  .camera-frame {
-    flex: 1; min-height: 0; display: flex; justify-content: center; align-items: center;
-  }
-  .camera-frame canvas {
-    height: 100%; max-width: 100%; aspect-ratio: 9/16;
-    background: #0b0b12; border: 2px solid var(--accent); border-radius: 8px;
-    box-shadow: 0 10px 30px rgba(0,0,0,.55);
-  }
-  .preview-actions { display: flex; gap: 8px; }
-  .preview-actions button { flex: 1; }
+  /* === Workspace === */
+  .workspace{display:grid;grid-template-columns:320px minmax(0,1fr) 340px;gap:8px;
+    padding:8px;overflow:hidden;min-height:0}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:6px;
+    display:flex;flex-direction:column;overflow:hidden;min-height:0;min-width:0}
+  .panel-header{padding:7px 12px;background:var(--panel2);border-bottom:1px solid var(--border);
+    font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);
+    display:flex;justify-content:space-between;align-items:center;flex-shrink:0;gap:8px}
+  .panel-header .badge{background:var(--bg);border:1px solid var(--border);padding:2px 8px;
+    border-radius:10px;color:var(--accent);font-family:ui-monospace,monospace;font-size:10px;
+    white-space:nowrap}
+  .panel-body{flex:1;overflow:auto;min-height:0}
+  .panel-body::-webkit-scrollbar{width:8px}
+  .panel-body::-webkit-scrollbar-thumb{background:var(--panel3);border-radius:4px}
 
-  .director-panel { flex: 1; }
-  .world-overview {
-    background: #0e0e15; border: 1px solid var(--line); border-radius: 8px;
-    height: 236px; flex-shrink: 0; overflow: hidden; position: relative;
-  }
-  .world-overview canvas { width: 100%; height: 100%; display: block; }
+  /* === Preview panel === */
+  .preview-panel .camera-frame{display:flex;justify-content:center;align-items:center;
+    padding:10px;flex:1;min-height:0;background:#08080c}
+  .preview-panel canvas#cam-canvas{max-width:100%;max-height:100%;aspect-ratio:9/16;
+    border:2px solid var(--accent);border-radius:6px;background:#000;
+    box-shadow:0 8px 24px rgba(0,0,0,.6)}
+  .preview-actions{display:flex;gap:6px;padding:8px;border-top:1px solid var(--border);
+    flex-shrink:0;flex-wrap:wrap}
+  .preview-actions button{flex:1;min-width:90px}
+  .rec-status{display:none;font-size:11px;color:var(--danger);padding:6px 10px;
+    border-top:1px solid var(--border);align-items:center;gap:6px}
+  .rec-status.on{display:flex}
+  .rec-dot{width:9px;height:9px;border-radius:50%;background:var(--danger);
+    animation:blink 1s infinite}
+  @keyframes blink{50%{opacity:.2}}
 
-  .controls {
-    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-    background: var(--panel2); border: 1px solid var(--line); padding: 8px 10px; border-radius: 8px;
-  }
-  button {
-    background: #00897b; color: #fff; border: none; padding: 7px 14px; border-radius: 6px;
-    cursor: pointer; font-weight: 600; font-size: 12px; font-family: inherit;
-  }
-  button:hover { filter: brightness(1.15); }
-  button:disabled { opacity: .45; cursor: not-allowed; }
-  button.secondary { background: #3949ab; }
-  button.warn { background: #c62828; }
-  button.ghost { background: #2c2c3a; border: 1px solid var(--line); }
-  select {
-    background: #14141c; color: var(--text); border: 1px solid var(--line);
-    border-radius: 6px; padding: 5px 6px; font-size: 12px; font-family: inherit;
-  }
-  input[type="range"] { flex: 1; min-width: 120px; cursor: pointer; accent-color: var(--accent); }
-  .timecode { font-family: ui-monospace, monospace; font-size: 13px; color: #ffb74d; min-width: 118px; text-align: right; }
-  label.chk { font-size: 12px; color: var(--dim); display: flex; gap: 5px; align-items: center; cursor: pointer; }
+  /* === Director panel === */
+  .director-panel{display:grid;grid-template-rows:180px auto minmax(0,1fr) auto}
+  .overview-wrap{background:#050508;border-bottom:1px solid var(--border);overflow:hidden;
+    position:relative}
+  .overview-wrap canvas{width:100%;height:100%;display:block}
+  .overview-badge{position:absolute;top:6px;left:8px;font-size:10px;color:var(--text-dim);
+    font-family:ui-monospace,monospace;background:rgba(0,0,0,.5);padding:2px 8px;border-radius:3px}
+  .controls{display:flex;align-items:center;gap:8px;padding:8px 10px;
+    border-bottom:1px solid var(--border);background:var(--panel2);flex-wrap:wrap}
+  .controls button{padding:6px 12px}
+  .controls input[type=range]{flex:1;min-width:100px;accent-color:var(--accent)}
+  .controls .timecode{font-family:ui-monospace,monospace;font-size:12px;color:#ffb74d;
+    min-width:105px;text-align:right;white-space:nowrap}
+  .controls select{background:var(--bg);color:var(--text);border:1px solid var(--border);
+    padding:4px 6px;border-radius:3px;font-size:11px}
+  .controls label.chk{font-size:11px;color:var(--text-dim);display:flex;gap:4px;
+    align-items:center;cursor:pointer;user-select:none}
+  .timelines{display:flex;flex-direction:column;gap:5px;padding:10px;overflow:auto;min-height:0}
+  .track{display:flex;align-items:center;gap:8px;min-height:30px}
+  .track-header{width:92px;display:flex;justify-content:space-between;align-items:center;
+    flex-shrink:0;gap:4px}
+  .track-label{font-size:11px;font-weight:600;color:var(--text-dim);white-space:nowrap}
+  .track-header button.tiny{background:var(--panel3);color:var(--text-dim);border:1px solid var(--border);
+    width:18px;height:18px;border-radius:3px;font-size:11px;line-height:1;cursor:pointer;
+    padding:0;display:flex;align-items:center;justify-content:center}
+  .track-header button.tiny:hover{background:var(--accent);color:#000;border-color:var(--accent)}
+  .track-bar{flex:1;height:28px;background:var(--bg);border-radius:4px;position:relative;
+    overflow:hidden;border:1px solid var(--border);min-width:0}
+  .clip{position:absolute;top:3px;bottom:3px;border-radius:3px;font-size:10.5px;
+    padding:0 7px;display:flex;align-items:center;white-space:nowrap;overflow:hidden;
+    color:#fff;font-weight:500;cursor:pointer;min-width:4px;
+    transition:filter .12s}
+  .clip.world{background:linear-gradient(180deg,#388e3c,#2e7d32)}
+  .clip.actor{background:linear-gradient(180deg,#f57c00,#e65100)}
+  .clip.camera{background:linear-gradient(180deg,#1976d2,#0d47a1)}
+  .clip:hover{filter:brightness(1.2)}
+  .clip.selected{outline:2px solid #ffeb3b;outline-offset:-1px;z-index:2}
+  .clip.wait{background:repeating-linear-gradient(45deg,#2a2a36,#2a2a36 4px,#1e1e28 4px,#1e1e28 8px);
+    color:var(--text-dim);font-style:italic;font-weight:400}
+  .playhead{position:absolute;top:0;bottom:0;width:2px;background:#ff5252;
+    pointer-events:none;z-index:5}
+  .blackboard{display:flex;gap:5px;flex-wrap:wrap;padding:6px 10px;
+    border-top:1px solid var(--border);align-items:center;min-height:32px;
+    background:var(--panel2);flex-shrink:0}
+  .blackboard .label{font-size:10px;text-transform:uppercase;color:var(--text-dim);
+    letter-spacing:.5px;margin-right:4px}
+  .flag{background:rgba(46,125,50,.25);color:#81c784;border:1px solid #2e7d32;
+    font-size:10.5px;padding:2px 9px;border-radius:12px;font-family:ui-monospace,monospace}
+  .flag.empty{background:var(--bg);color:var(--text-dim);border-color:var(--border);
+    font-style:italic}
 
-  .timelines { display: flex; flex-direction: column; gap: 6px; }
-  .track { display: flex; align-items: center; gap: 10px; }
-  .track-label { width: 108px; font-size: 12px; font-weight: 600; color: var(--dim); flex-shrink: 0; }
-  .track-bar {
-    flex: 1; height: 30px; background: #12121a; border-radius: 5px; position: relative;
-    overflow: hidden; border: 1px solid #2b2b38; cursor: pointer;
-  }
-  .clip {
-    position: absolute; top: 3px; bottom: 3px; border-radius: 3px; font-size: 10.5px;
-    display: flex; align-items: center; padding: 0 6px; white-space: nowrap; overflow: hidden;
-    color: #fff; font-weight: 500; min-width: 5px;
-  }
-  .clip.world  { background: var(--world);  border-left: 3px solid #81c784; }
-  .clip.actor  { background: var(--actor);  border-left: 3px solid #ffcc80; }
-  .clip.camera { background: var(--camera); border-left: 3px solid #64b5f6; }
-  .clip.wait {
-    background: repeating-linear-gradient(45deg, #2a2a36, #2a2a36 5px, #232330 5px, #232330 10px);
-    border-left: 3px solid #55556a; color: #8f8fa6; font-style: italic;
-  }
-  .playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #ff5252; pointer-events: none; z-index: 5; }
+  /* === Inspector panel === */
+  .inspector-panel .panel-body{padding:10px}
+  .inspector-panel .field{margin-bottom:10px}
+  .inspector-panel label{display:block;font-size:11px;color:var(--text-dim);
+    margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
+  .inspector-panel input,.inspector-panel select,.inspector-panel textarea{
+    width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);
+    padding:6px 8px;border-radius:4px;font-size:12px;font-family:inherit}
+  .inspector-panel input:focus,.inspector-panel select:focus,.inspector-panel textarea:focus{
+    outline:none;border-color:var(--accent)}
+  .inspector-panel .row{display:flex;gap:6px}
+  .inspector-panel .row .field{flex:1;margin-bottom:0}
+  .inspector-panel .empty{color:var(--text-dim);text-align:center;
+    padding:40px 14px;font-style:italic;line-height:1.6}
+  .inspector-panel .clip-info{background:var(--panel2);border:1px solid var(--border);
+    border-radius:5px;padding:10px;margin-bottom:10px;font-size:12px;line-height:1.6}
+  .inspector-panel .clip-info .type-badge{display:inline-block;padding:2px 8px;
+    border-radius:10px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;
+    margin-bottom:6px;font-weight:600}
+  .inspector-panel .clip-info .type-badge.world{background:var(--world);color:#fff}
+  .inspector-panel .clip-info .type-badge.actor{background:var(--actor);color:#fff}
+  .inspector-panel .clip-info .type-badge.camera{background:var(--camera);color:#fff}
+  .inspector-panel .clip-info .type-badge.wait{background:var(--panel3);color:var(--text-dim)}
+  .inspector-panel .line-ref{font-family:ui-monospace,monospace;font-size:11px;
+    color:#ffb74d;background:var(--bg);padding:2px 8px;border-radius:3px;
+    display:inline-block;margin-top:6px}
+  .inspector-panel button.danger{background:var(--danger);color:#fff;border:none;
+    padding:8px 12px;border-radius:4px;cursor:pointer;width:100%;margin-top:10px;
+    font-size:12px;font-weight:600;font-family:inherit}
+  .inspector-panel button.danger:hover{background:#e53935}
+  .inspector-panel button.secondary{background:var(--panel2);color:var(--text);
+    border:1px solid var(--border);padding:7px 12px;border-radius:4px;cursor:pointer;
+    width:100%;margin-top:6px;font-size:12px;font-family:inherit}
+  .inspector-panel button.secondary:hover{background:var(--accent);color:#000;border-color:var(--accent)}
 
-  .blackboard { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; min-height: 26px; }
-  .blackboard .bb-title { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .5px; margin-right: 4px; }
-  .flag {
-    font-size: 11px; font-family: ui-monospace, monospace; padding: 3px 9px; border-radius: 20px;
-    background: #173321; color: #81c784; border: 1px solid #2e7d32;
-  }
-  .flag.off { background: #1c1c26; color: #66667c; border-color: #2c2c3a; }
+  /* === Editor === */
+  .editor{display:grid;grid-template-rows:auto minmax(0,1fr);border-top:1px solid var(--border);
+    background:var(--panel);min-height:0}
+  .editor-toolbar{display:flex;gap:8px;padding:7px 12px;border-bottom:1px solid var(--border);
+    align-items:center;flex-wrap:wrap;background:var(--panel2)}
+  .editor-toolbar .title{font-size:11px;text-transform:uppercase;color:var(--text-dim);
+    letter-spacing:.5px;margin-right:auto}
+  .editor-toolbar button{background:var(--accent);color:#0a0a12;border:none;
+    padding:6px 14px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;
+    font-family:inherit}
+  .editor-toolbar button:hover{background:var(--accent2)}
+  .editor-toolbar button.secondary{background:var(--panel3);color:var(--text);
+    border:1px solid var(--border);font-weight:400}
+  .editor-toolbar button.secondary:hover{background:var(--accent);color:#000;border-color:var(--accent)}
+  .editor-toolbar .hint{font-size:11px;color:var(--text-dim)}
+  .editor-textarea{width:100%;height:100%;resize:none;background:var(--bg);color:#d6e4ff;
+    border:none;padding:10px 14px;font-family:ui-monospace,'Consolas',monospace;
+    font-size:12.5px;line-height:1.55;outline:none;tab-size:2;
+    overflow:auto}
+  .editor-error{display:none;padding:6px 12px;background:#3a1420;color:#ff8a80;
+    border-top:1px solid #c62828;font-family:ui-monospace,monospace;font-size:12px}
+  .editor-error.visible{display:block}
 
-  .editor-panel { gap: 8px; }
-  .editor-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .editor-head h3 { flex: 1; }
-  textarea {
-    width: 100%; height: 240px; resize: vertical; background: #101018; color: #d6e4ff;
-    border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
-    font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; font-size: 12.5px; line-height: 1.55;
-    tab-size: 2;
-  }
-  textarea:focus { outline: 1px solid var(--accent); }
-  .error-box {
-    display: none; background: #3a1420; border: 1px solid #c62828; color: #ff8a80;
-    font-size: 12px; font-family: ui-monospace, monospace; padding: 8px 12px; border-radius: 6px; white-space: pre-wrap;
-  }
-  details { font-size: 12.5px; color: var(--dim); }
-  details summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: 12px; }
-  details .ref { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; margin-top: 8px; }
-  details .ref > div { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
-  details .ref b { color: var(--text); display: block; margin-bottom: 5px; }
-  details code { color: #ffcc80; background: #14141c; padding: 1px 5px; border-radius: 4px; font-size: 11.5px; }
-  details li { margin: 3px 0; }
-  details ul { margin: 4px 0; padding-left: 18px; }
-  .req-list { columns: 2; column-gap: 24px; margin: 8px 0 2px; padding-left: 18px; }
-  .req-list li { margin: 3px 0; break-inside: avoid; }
-  .rec-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #ff5252; margin-right: 6px; animation: blink 1s infinite; }
-  @keyframes blink { 50% { opacity: .25; } }
-  @media (max-width: 980px) {
-    .workspace { flex-direction: column; height: auto; }
-    .preview-panel { width: 100%; }
-    .camera-frame { height: 480px; }
-    .req-list { columns: 1; }
+  /* === Hidden file input === */
+  input[type=file].hidden{display:none}
+
+  /* === Responsive === */
+  @media(max-width:1100px){
+    .app{grid-template-rows:44px auto 260px;overflow:auto}
+    .workspace{grid-template-columns:1fr;grid-template-rows:auto auto auto}
+    .preview-panel .camera-frame{height:420px}
+    .director-panel{grid-template-rows:180px auto auto auto}
   }
 </style>
 </head>
 <body>
 
-<header>
-  <h1>🎬 Виртуальная киностудия</h1>
-  <span class="sub">единый бесшовный мир · 3 таймлайна (Мир / Персонаж / Камера) · blackboard · детерминированный seek(t)</span>
-</header>
+<div class="app">
+  <!-- ===================== HEADER ===================== -->
+  <header class="header">
+    <h1>🎬 Виртуальная киностудия</h1>
+    <input class="project-name" id="project-name" placeholder="Название проекта" value="Мой проект">
+    <div class="spacer"></div>
+    <button id="btn-save" title="Скачать проект JSON">💾 Сохранить</button>
+    <button id="btn-load" title="Загрузить проект JSON">📂 Загрузить</button>
+    <button id="btn-reset-all" title="Сбросить проект">↺ Сброс</button>
+    <button class="primary" id="btn-help" title="Показать справку">? Справка</button>
+    <input type="file" class="hidden" id="file-input" accept=".json,.txt">
+  </header>
 
-<div class="workspace">
-  <!-- Итоговый вертикальный кадр 9:16 -->
-  <div class="panel preview-panel">
-    <h3><span>Камера 9:16 · 1080×1920</span><span class="badge" id="zoom-badge">1.00×</span></h3>
-    <div class="camera-frame"><canvas id="cam-canvas" width="540" height="960"></canvas></div>
-    <div class="preview-actions">
-      <button class="ghost" id="btn-png" title="Сохранить текущий кадр как PNG 1080×1920">🖼 PNG кадр</button>
-      <button class="warn" id="btn-rec" title="Записать весь ролик в видеофайл">⏺ Экспорт видео</button>
+  <!-- ===================== WORKSPACE ===================== -->
+  <main class="workspace">
+
+    <!-- === Preview 9:16 === -->
+    <section class="panel preview-panel">
+      <div class="panel-header">
+        <span>Камера · 9:16</span>
+        <span class="badge" id="zoom-badge">1.00×</span>
+      </div>
+      <div class="camera-frame">
+        <canvas id="cam-canvas" width="405" height="720"></canvas>
+      </div>
+      <div class="preview-actions">
+        <button class="secondary" id="btn-png">🖼 PNG 1080×1920</button>
+        <button class="danger" id="btn-video">⏺ Видео</button>
+      </div>
+      <div class="rec-status" id="rec-status">
+        <span class="rec-dot"></span>
+        <span id="rec-text">Запись…</span>
+      </div>
+    </section>
+
+    <!-- === Director === -->
+    <section class="panel director-panel">
+      <div class="overview-wrap">
+        <canvas id="ov-canvas"></canvas>
+        <span class="overview-badge">Режиссёрский обзор · 3200 × 720</span>
+      </div>
+      <div class="controls">
+        <button id="btn-play" class="primary">▶ Старт</button>
+        <button class="secondary" id="btn-reset">↺ В начало</button>
+        <input type="range" id="scrubber" min="0" max="10" step="0.01" value="0">
+        <span class="timecode" id="timecode">0.00 / 0.00 s</span>
+        <select id="speed">
+          <option value="0.5">0.5×</option>
+          <option value="1" selected>1×</option>
+          <option value="2">2×</option>
+        </select>
+        <label class="chk"><input type="checkbox" id="loop"> цикл</label>
+      </div>
+      <div class="timelines" id="timelines-ui"></div>
+      <div class="blackboard" id="blackboard">
+        <span class="label">Blackboard:</span>
+      </div>
+    </section>
+
+    <!-- === Inspector === -->
+    <section class="panel inspector-panel">
+      <div class="panel-header">
+        <span>Инспектор</span>
+        <span class="badge" id="state-badge">Готов</span>
+      </div>
+      <div class="panel-body" id="inspector-body">
+        <div class="empty">Кликните на клип в таймлайне,<br>чтобы увидеть его параметры.</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===================== EDITOR ===================== -->
+  <section class="editor">
+    <div class="editor-toolbar">
+      <span class="title">Сценарий · DSL</span>
+      <span class="hint">Пробел — play · ←/→ — кадр · Shift+←/→ — 1с · Ctrl+S — сохранить</span>
+      <button id="btn-apply">⚙ Применить</button>
+      <button class="secondary" id="btn-restore">Вернуть пример</button>
     </div>
-    <div id="rec-status" style="font-size:11px;color:#ff8a80;display:none"><span class="rec-dot"></span><span id="rec-text">Запись…</span></div>
-  </div>
-
-  <!-- Режиссёрский пульт -->
-  <div class="panel director-panel">
-    <h3><span>Режиссёрский обзор мира (3200 × 720)</span><span class="badge" id="state-badge">Готов</span></h3>
-    <div class="world-overview"><canvas id="overview-canvas"></canvas></div>
-
-    <div class="controls">
-      <button id="btn-play">▶ Старт</button>
-      <button class="secondary" id="btn-reset">↺ В начало</button>
-      <input type="range" id="scrubber" min="0" max="10" step="0.01" value="0">
-      <div class="timecode" id="timecode">0.00 / 0.00s</div>
-      <select id="speed" title="Скорость воспроизведения">
-        <option value="0.5">0.5×</option>
-        <option value="1" selected>1×</option>
-        <option value="2">2×</option>
-      </select>
-      <label class="chk"><input type="checkbox" id="loop"> цикл</label>
-    </div>
-
-    <div class="timelines" id="timelines-ui"></div>
-    <div class="blackboard" id="blackboard"><span class="bb-title">Blackboard:</span></div>
-  </div>
-</div>
-
-<!-- Редактор сценария -->
-<div class="panel editor-panel">
-  <div class="editor-head">
-    <h3><span>Сценарий · декларативные команды на 3 дорожках</span></h3>
-    <button id="btn-apply">⚙ Применить сценарий</button>
-    <button class="ghost" id="btn-restore">Вернуть пример</button>
-  </div>
-  <div class="error-box" id="error-box"></div>
-  <textarea id="script-editor" spellcheck="false"></textarea>
-
-  <details>
-    <summary>📖 Справка по DSL и синтаксису</summary>
-    <div class="ref">
-      <div>
-        <b>Общие правила</b>
-        <ul>
-          <li>Секции: <code>=== МИР ===</code>, <code>=== ПЕРСОНАЖ ===</code>, <code>=== КАМЕРА ===</code>. Комментарии: <code>// текст</code>.</li>
-          <li>Строка = блок: сначала условия, затем команды. Команды блока выполняются последовательно, дорожка ждёт завершения каждой.</li>
-          <li>Условия: <code>[Флаг:Имя]</code> — ждать флаг; <code>[НетФлага:Имя]</code>; <code>[Время&gt;2.5]</code> (также <code>&gt;= &lt; &lt;=</code>).</li>
-          <li>Общие команды: <code>[Ждать:1.5]</code>, <code>[ВзвестиФлаг:Имя]</code> (или <code>[Флаг:Имя]</code> после команд), <code>[СбросФлага:Имя]</code>.</li>
-          <li><code>[Флаг:Имя]</code> в начале блока — условие ожидания; после команд — установка флага. <code>[ВзвестиФлаг:Имя]</code> — всегда установка.</li>
-        </ul>
-      </div>
-      <div>
-        <b>Дорожка МИР</b>
-        <ul>
-          <li><code>[Дверь:Кабинет|Коридор|Улица:открыть|закрыть]</code></li>
-          <li><code>[Лампа:Стол|Фонарь:вкл|выкл]</code></li>
-          <li><code>[Монитор:Ноутбук:вкл|выкл]</code></li>
-          <li><code>[Экран:Ноутбук:Ошибка404|Код|Пусто]</code></li>
-          <li><code>[Погода:дождь|ясно]</code></li>
-        </ul>
-      </div>
-      <div>
-        <b>Дорожка ПЕРСОНАЖ</b>
-        <ul>
-          <li><code>[ИдтиК:Точка]</code> — точки: Старт, Окно, Стол, Кофемашина, Улица, Фонарь (возвращает RUNNING, пока идёт).</li>
-          <li><code>[Скорость:260]</code> — px/сек (по умолчанию 220).</li>
-          <li><code>[Поза:Стоит|СмотритВЭкран|ПьетКофе|Фейспалм|Машет]</code></li>
-          <li><code>[Эмоция:ПарИзУшей|Сердце|Удивление|Вопрос:2]</code> — эффект на N сек.</li>
-          <li><code>[Сказать:Текст без двоеточий:2]</code> — реплика на N сек.</li>
-        </ul>
-      </div>
-      <div>
-        <b>Дорожка КАМЕРА</b>
-        <ul>
-          <li><code>[СледитьЗа:Герой:Зум:Упреждение]</code> — режим Follow, упреждение взгляда в px.</li>
-          <li><code>[Наезд:1.6:0.8]</code> — плавно зум до 1.6 за 0.8с.</li>
-          <li><code>[Фокус:Часы:1.5:0.8]</code> — режим Focus на объект (Часы, Ноутбук, Окно, Кофемашина, Фонарь, Улица).</li>
-          <li><code>[Кадр:Герой:Голова:1.8:0.6]</code> — крупный план головы героя.</li>
-          <li><code>[Кат:Улица:0.95]</code> — мгновенный монтажный переход в точку/объект.</li>
-        </ul>
-      </div>
-    </div>
-  </details>
-
-  <details>
-    <summary>✅ Свод функциональных требований (из анализа диалога)</summary>
-    <ol class="req-list">
-      <li>Единый бесшовный мир (Scene Graph) с именованными зонами и опорными точками — без нарезки сцен.</li>
-      <li>Три параллельных таймлайна: Мир, Персонаж, Камера — в едином виртуальном времени.</li>
-      <li>Синхронизация через blackboard: флаги и условия ожидания (event-driven, без ручного подбора секунд).</li>
-      <li>Порядок вычисления дорожек: Мир → Персонаж → Камера (камера видит актуальные координаты).</li>
-      <li>Умная камера-демпфер: Follow с упреждением, Focus на объект, мгновенный Cut; окно 9:16 (X, Y, zoom).</li>
-      <li>Детерминированный seek(t): свободная перемотка, пригодность для покадрового рендера.</li>
-      <li>Два окна из одного источника: видоискатель 9:16 + режиссёрский обзор с рамкой камеры.</li>
-      <li>Скелетная анимация: походка, позы, эмоции-эффекты, реплики.</li>
-      <li>Интерактивный мир: двери, лампы, монитор с контентом, погода (дождь).</li>
-      <li>Редактор команд в UI: правка сценария без изменения кода, валидация с указанием строки.</li>
-      <li>Плеер: play/pause, сброс, скраббер, таймкод, скорость, цикл; клипы и плейхед на 3 дорожках.</li>
-      <li>Экспорт: PNG-кадр 1080×1920 и запись видео всего ролика (mp4 при поддержке браузера, иначе webm).</li>
-      <li>Один HTML-файл, чистый JavaScript + Canvas, работает полностью офлайн.</li>
-    </ol>
-  </details>
+    <textarea class="editor-textarea" id="script-editor" spellcheck="false"></textarea>
+    <div class="editor-error" id="editor-error"></div>
+  </section>
 </div>
 
 <script>
 'use strict';
 /* ============================================================
- * 0. КОНСТАНТЫ МИРА (Scene Graph)
+ * 0. КОНСТАНТЫ МИРА
  * ============================================================ */
 const WORLD = { w: 3200, h: 720, floor: 620 };
 const FPS = 60, DT = 1 / FPS;
-const BASE_CAM = { w: 405, h: 720 }; // окно 9:16 при zoom = 1
+const BASE_CAM = { w: 405, h: 720 };
 
 const ZONES = [
   { name: 'Кабинет', x0: 0,    x1: 820,  wall: '#2a3040', floorC: '#3a3348' },
-  { name: 'Коридор', x0: 820, x1: 1420, wall: '#262c38', floorC: '#33303e' },
+  { name: 'Коридор', x0: 820,  x1: 1420, wall: '#262c38', floorC: '#33303e' },
   { name: 'Кафе',    x0: 1420, x1: 2220, wall: '#332a33', floorC: '#3c2f35' },
   { name: 'Улица',   x0: 2220, x1: 3200, wall: null,      floorC: '#2b3138' }
 ];
@@ -283,15 +298,17 @@ const OBJECTS = {
 };
 const DOORS = { 'Кабинет': 820, 'Коридор': 1420, 'Улица': 2220 };
 
+/* ============================================================
+ * 1. УТИЛИТЫ
+ * ============================================================ */
 const lerp = (a, b, t) => a + (b - a) * t;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const easeInOut = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 const hash = i => { const s = Math.sin(i * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
+const deepClone = o => JSON.parse(JSON.stringify(o));
 
 /* ============================================================
- * 1. ПОЗЫ ПЕРСОНАЖА (скелетные параметры)
- *    lean — наклон корпуса, tilt — наклон головы,
- *    aL/aR — углы плеча/локтя (от вертикали вниз, + вперёд)
+ * 2. ПОЗЫ ПЕРСОНАЖА
  * ============================================================ */
 const POSES = {
   'Стоит':         { lean: .03, tilt: 0,   aL1: .12, aL2: .18, aR1: -.10, aR2: .16, cup: 0 },
@@ -308,16 +325,23 @@ function blendPose(a, b, k) {
 }
 
 /* ============================================================
- * 2. DSL: ПАРСЕР СЦЕНАРИЯ
+ * 3. DSL: ПАРСЕР С ВАЛИДАЦИЕЙ И НОМЕРОМ СТРОКИ
  * ============================================================ */
-const SECTION_MAP = { 'МИР': 'world', 'ПЕРСОНАЖ': 'actor', 'КАМЕРА': 'camera', 'WORLD': 'world', 'ACTOR': 'actor', 'CAMERA': 'camera' };
+const SECTION_MAP = {
+  'МИР':'world','ПЕРСОНАЖ':'actor','КАМЕРА':'camera',
+  'WORLD':'world','ACTOR':'actor','CAMERA':'camera'
+};
 const CMD_REGISTRY = {
-  common: ['Ждать','Флаг','ВзвестиФлаг','СбросФлага'],
+  common: ['Ждать','Флаг','СбросФлага'],
   world:  ['Дверь','Лампа','Монитор','Экран','Погода'],
   actor:  ['ИдтиК','Скорость','Поза','Эмоция','Сказать'],
   camera: ['СледитьЗа','Наезд','Фокус','Кадр','Кат']
 };
 const EMOTIONS = ['ПарИзУшей','Сердце','Удивление','Вопрос'];
+
+class ParseError extends Error {
+  constructor(line, msg) { super(msg); this.line = line; this.msg = msg; }
+}
 
 function parseScript(text) {
   const tracks = { world: [], actor: [], camera: [] };
@@ -326,72 +350,81 @@ function parseScript(text) {
   for (let li = 0; li < lines.length; li++) {
     let line = lines[li].replace(/\/\/.*$/, '').trim();
     if (!line) continue;
+
     const sec = line.match(/^===\s*([A-ZА-ЯЁ]+)\s*===$/i);
     if (sec) {
       const key = SECTION_MAP[sec[1].toUpperCase()];
-      if (!key) throw { line: li + 1, msg: 'Неизвестная секция: ' + sec[1] };
-      cur = key; continue;
+      if (!key) throw new ParseError(li + 1, 'Неизвестная секция: ' + sec[1]);
+      cur = key;
+      continue;
     }
-    if (!cur) throw { line: li + 1, msg: 'Команда вне секции (начните с === МИР === и т.п.)' };
+    if (!cur) throw new ParseError(li + 1, 'Команда вне секции. Начните с === МИР ===');
+
     const tokens = [...line.matchAll(/\[([^\[\]]+)\]/g)].map(m => m[1].trim());
-    if (!tokens.length) throw { line: li + 1, msg: 'Ожидались команды в квадратных скобках' };
+    if (!tokens.length) throw new ParseError(li + 1, 'Ожидались команды в квадратных скобках');
+
     const conds = [], actions = [];
     for (const tk of tokens) {
       const tm = tk.match(/^Время\s*(>=|<=|>|<)\s*([\d.]+)$/);
       if (tm) { conds.push({ type: 'time', op: tm[1], val: parseFloat(tm[2]), raw: tk }); continue; }
+
       const parts = tk.split(':').map(s => s.trim());
       const name = parts[0], args = parts.slice(1);
+
       if (name === 'Флаг' || name === 'НетФлага') {
-        if (!args[0]) throw { line: li + 1, msg: 'Условия/команда Флаг требует имя' };
-        // [Флаг:X] в начале блока (перед командами) — условие; после команд — установка
-        if (actions.length === 0 && name === 'Флаг') { conds.push({ type: 'flag', name: args[0], raw: tk }); continue; }
-        if (name === 'НетФлага' && actions.length === 0) { conds.push({ type: 'noflag', name: args[0], raw: tk }); continue; }
-        actions.push({ name, args, raw: tk }); continue;
+        if (!args[0]) throw new ParseError(li + 1, `${name} требует имя флага`);
+        if (actions.length === 0 && name === 'Флаг') {
+          conds.push({ type: 'flag', name: args[0], raw: tk }); continue;
+        }
+        if (name === 'НетФлага' && actions.length === 0) {
+          conds.push({ type: 'noflag', name: args[0], raw: tk }); continue;
+        }
+        actions.push({ name, args, raw: tk, line: li + 1 }); continue;
       }
+
       if (!CMD_REGISTRY.common.includes(name) && !CMD_REGISTRY[cur].includes(name))
-        throw { line: li + 1, msg: `Команда «${name}» недоступна на дорожке ${cur.toUpperCase()}` };
+        throw new ParseError(li + 1, `Команда «${name}» недоступна на дорожке ${cur.toUpperCase()}`);
       validateCmd(name, args, li + 1);
-      actions.push({ name, args, raw: tk });
+      actions.push({ name, args, raw: tk, line: li + 1 });
     }
-    if (!actions.length) throw { line: li + 1, msg: 'Блок содержит только условия — добавьте команды' };
+    if (!actions.length) throw new ParseError(li + 1, 'Блок только с условиями — добавьте команды');
     tracks[cur].push({ conds, actions, line: li + 1 });
   }
   return tracks;
 }
+
 function validateCmd(name, args, line) {
-  const need = (n) => { if (args.length < n) throw { line, msg: `«${name}»: не хватает аргументов (нужно ${n})` }; };
-  const oneOf = (v, list, what) => { if (!list.includes(v)) throw { line, msg: `«${name}»: неизвестн${what} «${v}». Доступно: ${list.join(', ')}` }; };
-  const num = (v) => { if (isNaN(parseFloat(v))) throw { line, msg: `«${name}»: ожидалось число, получено «${v}»` }; };
+  const need = (n) => { if (args.length < n) throw new ParseError(line, `«${name}»: нужно ${n} аргумента(ов)`); };
+  const oneOf = (v, list, what) => {
+    if (!list.includes(v)) throw new ParseError(line, `«${name}»: неизвестн${what} «${v}». Доступно: ${list.join(', ')}`);
+  };
+  const num = (v) => { if (isNaN(parseFloat(v))) throw new ParseError(line, `«${name}»: ожидалось число, получено «${v}»`); };
   switch (name) {
-    case 'Ждать': need(1); num(args[0]); break;
-    case 'ВзвестиФлаг': case 'СбросФлага': need(1); break;
-    case 'ИдтиК': need(1); oneOf(args[0], Object.keys(POINTS), 'ая точка'); break;
+    case 'Ждать':    need(1); num(args[0]); break;
+    case 'ИдтиК':    need(1); oneOf(args[0], Object.keys(POINTS), 'ая точка'); break;
     case 'Скорость': need(1); num(args[0]); break;
-    case 'Поза': need(1); oneOf(args[0], Object.keys(POSES), 'ая поза'); break;
-    case 'Эмоция': need(2); oneOf(args[0], EMOTIONS, 'ая эмоция'); num(args[1]); break;
-    case 'Сказать': need(2); num(args[1]); break;
-    case 'Дверь': need(2); oneOf(args[0], Object.keys(DOORS), 'ая дверь'); oneOf(args[1], ['открыть','закрыть'], 'ое действие'); break;
-    case 'Лампа': need(2); oneOf(args[0], ['Стол','Фонарь'], 'ая лампа'); oneOf(args[1], ['вкл','выкл'], 'ое действие'); break;
-    case 'Монитор': need(2); oneOf(args[1], ['вкл','выкл'], 'ое действие'); break;
-    case 'Экран': need(2); oneOf(args[1], ['Ошибка404','Код','Пусто'], 'ый контент'); break;
-    case 'Погода': need(1); oneOf(args[0], ['дождь','ясно'], 'ая погода'); break;
-    case 'СледитьЗа': need(3); num(args[1]); num(args[2]); break;
-    case 'Наезд': need(2); num(args[0]); num(args[1]); break;
-    case 'Фокус': need(3);
-      if (!OBJECTS[args[0]] && !POINTS[args[0]]) throw { line, msg: `«Фокус»: неизвестный объект «${args[0]}»` };
+    case 'Поза':     need(1); oneOf(args[0], Object.keys(POSES), 'ая поза'); break;
+    case 'Эмоция':   need(2); oneOf(args[0], EMOTIONS, 'ая эмоция'); num(args[1]); break;
+    case 'Сказать':  need(2); num(args[1]); break;
+    case 'Дверь':    need(2); oneOf(args[0], Object.keys(DOORS), 'ая дверь'); oneOf(args[1], ['открыть','закрыть'], 'ое действие'); break;
+    case 'Лампа':    need(2); oneOf(args[0], ['Стол','Фонарь'], 'ая лампа'); oneOf(args[1], ['вкл','выкл'], 'ое действие'); break;
+    case 'Монитор':  need(2); oneOf(args[1], ['вкл','выкл'], 'ое действие'); break;
+    case 'Экран':    need(2); oneOf(args[1], ['Ошибка404','Код','Пусто'], 'ый контент'); break;
+    case 'Погода':   need(1); oneOf(args[0], ['дождь','ясно'], 'ая погода'); break;
+    case 'СледитьЗа':need(3); num(args[1]); num(args[2]); break;
+    case 'Наезд':    need(2); num(args[0]); num(args[1]); break;
+    case 'Фокус':    need(3);
+      if (!OBJECTS[args[0]] && !POINTS[args[0]]) throw new ParseError(line, `«Фокус»: неизвестный объект «${args[0]}»`);
       num(args[1]); num(args[2]); break;
-    case 'Кадр': need(4); num(args[2]); num(args[3]); break;
-    case 'Кат': need(2);
-      if (!OBJECTS[args[0]] && !POINTS[args[0]]) throw { line, msg: `«Кат»: неизвестная точка «${args[0]}»` };
+    case 'Кадр':     need(4); num(args[2]); num(args[3]); break;
+    case 'Кат':      need(2);
+      if (!OBJECTS[args[0]] && !POINTS[args[0]]) throw new ParseError(line, `«Кат»: неизвестная точка «${args[0]}»`);
       num(args[1]); break;
   }
 }
 
 /* ============================================================
- * 3. СИМУЛЯЦИЯ (event-driven) + ЗАПЕКАНИЕ КАДРОВ (детерминизм)
- *    Симуляция идёт фиксированным шагом 1/60с и пишет снимок
- *    состояния на каждый кадр. seek(t) = мгновенный доступ к
- *    снимку — перемотка детерминирована и ничего не ломает.
+ * 4. СИМУЛЯЦИЯ (event-driven)
  * ============================================================ */
 function initialState() {
   return {
@@ -407,32 +440,35 @@ function initialState() {
     flags: new Set()
   };
 }
+
 function condOk(c, s, t) {
   if (c.type === 'flag') return s.flags.has(c.name);
   if (c.type === 'noflag') return !s.flags.has(c.name);
   const v = c.val;
   return c.op === '>' ? t > v : c.op === '>=' ? t >= v : c.op === '<' ? t < v : t <= v;
 }
+
 function resolvePlace(name) {
   if (OBJECTS[name]) return { x: OBJECTS[name].x, y: OBJECTS[name].y };
   return { x: POINTS[name], y: 460 };
 }
 
-/* Исполнение одной команды. Возвращает 'done' | 'running'. */
+function clampCamX(x, vw) { return vw >= WORLD.w ? WORLD.w / 2 : clamp(x, vw / 2, WORLD.w - vw / 2); }
+function clampCamY(y, vh) { return vh >= WORLD.h ? WORLD.h / 2 : clamp(y, vh / 2, WORLD.h - vh / 2); }
+
 function execCommand(track, act, s, prog, t) {
   const a = act.args, A = s.actor, C = s.cam, W = s.world;
   switch (act.name) {
-    /* --- общие --- */
     case 'Ждать': prog.t0 ??= t; return (t - prog.t0 >= parseFloat(a[0]) - 1e-9) ? 'done' : 'running';
-    case 'Флаг': case 'ВзвестиФлаг': s.flags.add(a[0]); return 'done';
+    case 'Флаг': s.flags.add(a[0]); return 'done';
     case 'СбросФлага': s.flags.delete(a[0]); return 'done';
-    /* --- мир --- */
     case 'Дверь': W.doorTargets[a[0]] = a[1] === 'открыть' ? 1 : 0; return 'done';
-    case 'Лампа': if (a[0] === 'Стол') W.lampDesk = a[1] === 'вкл'; else W.lampStreet = a[1] === 'вкл'; return 'done';
+    case 'Лампа':
+      if (a[0] === 'Стол') W.lampDesk = a[1] === 'вкл'; else W.lampStreet = a[1] === 'вкл';
+      return 'done';
     case 'Монитор': W.monitor = a[1] === 'вкл' ? 'on' : 'off'; return 'done';
     case 'Экран': W.screen = a[1]; if (W.monitor === 'off') W.monitor = 'on'; return 'done';
     case 'Погода': W.rainTarget = a[0] === 'дождь' ? 1 : 0; return 'done';
-    /* --- персонаж --- */
     case 'Скорость': A.speed = parseFloat(a[0]); return 'done';
     case 'ИдтиК': {
       const tx = POINTS[a[0]]; A.walkTarget = a[0];
@@ -448,7 +484,6 @@ function execCommand(track, act, s, prog, t) {
       return 'done';
     case 'Эмоция': A.emotion = { type: a[0], t0: t, dur: parseFloat(a[1]) }; return 'done';
     case 'Сказать': A.bubble = { text: a[0], t0: t, dur: parseFloat(a[1]) }; return 'done';
-    /* --- камера --- */
     case 'СледитьЗа':
       C.mode = 'follow'; C.lead = parseFloat(a[2]);
       C.zoomTween = { from: C.zoom, to: parseFloat(a[1]), t0: t, dur: .5 };
@@ -477,33 +512,35 @@ function execCommand(track, act, s, prog, t) {
   }
   return 'done';
 }
-function clampCamX(x, vw) { return vw >= WORLD.w ? WORLD.w / 2 : clamp(x, vw / 2, WORLD.w - vw / 2); }
-function clampCamY(y, vh) { return vh >= WORLD.h ? WORLD.h / 2 : clamp(y, vh / 2, WORLD.h - vh / 2); }
 
-/* Динамика мира и камеры (пружинный демпфер) — вызывается каждый шаг. */
 function stepDynamics(s, t) {
   const W = s.world, A = s.actor, C = s.cam;
   for (const d in W.doors) W.doors[d] += (W.doorTargets[d] - W.doors[d]) * Math.min(1, DT * 4);
   W.rain += (W.rainTarget - W.rain) * Math.min(1, DT * 1.2);
   A.poseT = Math.min(1, A.poseT + DT / .3);
   A.walkBlend += ((A.moving ? 1 : 0) - A.walkBlend) * Math.min(1, DT * 8);
+
   if (C.zoomTween) {
     const z = C.zoomTween, k = clamp((t - z.t0) / z.dur, 0, 1);
     C.zoom = lerp(z.from, z.to, easeInOut(k));
     if (k >= 1) C.zoomTween = null;
   }
+
   const vw = BASE_CAM.w / C.zoom, vh = BASE_CAM.h / C.zoom;
   let tx = C.x, ty = C.y;
-  if (C.mode === 'follow') { tx = A.x + C.lead * A.dir; ty = WORLD.floor - vh * .24; }
-  else if (C.mode === 'head') { tx = A.x; ty = WORLD.floor - 150; }
+  if (C.mode === 'follow')      { tx = A.x + C.lead * A.dir; ty = WORLD.floor - vh * .24; }
+  else if (C.mode === 'head')   { tx = A.x; ty = WORLD.floor - 150; }
   else if (C.mode === 'focus' && C.focus) { tx = C.focus.x; ty = C.focus.y; }
-  const k = 1 - Math.exp(-6 * DT); // демпфер
+
+  const k = 1 - Math.exp(-6 * DT);
   C.x += (clampCamX(tx, vw) - C.x) * k;
   C.y += (clampCamY(ty, vh) - C.y) * k;
   C.x = clampCamX(C.x, vw); C.y = clampCamY(C.y, vh);
 }
 
-function makeRuntime(rules) { return { rules, ri: 0, ai: 0, prog: {}, done: rules.length === 0, waitStart: null, clip: null }; }
+function makeRuntime(rules) {
+  return { rules, ri: 0, ai: 0, prog: {}, done: rules.length === 0, waitStart: null, clip: null };
+}
 
 function stepTrack(trackName, rt, s, t, clips) {
   let guard = 0;
@@ -513,18 +550,28 @@ function stepTrack(trackName, rt, s, t, clips) {
     const ok = rule.conds.every(c => condOk(c, s, t));
     if (!ok) {
       if (rt.waitStart === null) rt.waitStart = t;
-      break; // RUNNING: ждём событие
+      break;
     }
     if (rt.waitStart !== null) {
-      clips.push({ track: trackName, label: 'ждёт: ' + rule.conds.map(c => c.raw).join(' '), start: rt.waitStart, end: t, wait: true });
+      clips.push({
+        track: trackName,
+        label: 'ждёт: ' + rule.conds.map(c => c.raw).join(' '),
+        start: rt.waitStart, end: t, wait: true, line: rule.line
+      });
       rt.waitStart = null;
     }
     const act = rule.actions[rt.ai];
-    if (!rt.clip) rt.clip = { track: trackName, label: act.raw, start: t, end: t, wait: false };
+    if (!rt.clip) rt.clip = {
+      track: trackName, label: act.raw, start: t, end: t, wait: false,
+      line: act.line, cmd: act.name, args: act.args
+    };
     const res = execCommand(trackName, act, s, rt.prog, t);
     if (res === 'running') break;
-    rt.clip.end = t; clips.push(rt.clip); rt.clip = null;
-    rt.prog = {}; rt.ai++;
+    rt.clip.end = t;
+    clips.push(rt.clip);
+    rt.clip = null;
+    rt.prog = {};
+    rt.ai++;
     if (rt.ai >= rule.actions.length) { rt.ri++; rt.ai = 0; }
   }
 }
@@ -534,26 +581,31 @@ function snapshot(s, t) {
   const pose = blendPose(A.posePrev, A.pose, easeInOut(A.poseT));
   return {
     t,
-    ax: A.x, dir: A.dir, moving: A.moving, poseName: A.pose, pose, walkBlend: A.walkBlend,
+    ax: A.x, dir: A.dir, moving: A.moving,
+    poseName: A.pose, pose, walkBlend: A.walkBlend,
     emotion: A.emotion && (t - A.emotion.t0 < A.emotion.dur) ? { ...A.emotion } : null,
     bubble: A.bubble && (t - A.bubble.t0 < A.bubble.dur) ? { ...A.bubble } : null,
     cam: { x: s.cam.x, y: s.cam.y, zoom: s.cam.zoom, cutT: s.cam.cutT },
-    doors: { ...s.world.doors }, lampDesk: s.world.lampDesk, lampStreet: s.world.lampStreet,
+    doors: { ...s.world.doors },
+    lampDesk: s.world.lampDesk, lampStreet: s.world.lampStreet,
     monitor: s.world.monitor, screen: s.world.screen, rain: s.world.rain,
     flags: [...s.flags],
-    status: A.moving ? ('Идёт → ' + A.walkTarget) : ('Поза: ' + A.pose)
+    status: A.moving ? ('Идёт → ' + (A.walkTarget || '')) : ('Поза: ' + A.pose)
   };
 }
 
-/* Запекание: прогон всей сцены фиксированным шагом. */
 function bake(tracks) {
   const s = initialState();
-  const rts = { world: makeRuntime(tracks.world), actor: makeRuntime(tracks.actor), camera: makeRuntime(tracks.camera) };
-  const frames = []; let clips = [];
+  const rts = {
+    world: makeRuntime(tracks.world),
+    actor: makeRuntime(tracks.actor),
+    camera: makeRuntime(tracks.camera)
+  };
+  const frames = [], clips = [];
   let t = 0, tail = 0;
   const MAX_T = 120;
+
   while (t < MAX_T) {
-    // порядок дорожек: Мир → Персонаж → Камера
     for (const k of ['world', 'actor', 'camera']) stepTrack(k, rts[k], s, t, clips);
     stepDynamics(s, t);
     frames.push(snapshot(s, t));
@@ -561,41 +613,21 @@ function bake(tracks) {
     if (allDone) { tail += DT; if (tail >= .8) break; }
     t += DT;
   }
-  if (t >= MAX_T) throw { line: 0, msg: 'Сценарий не завершается за 120с — проверьте условия (взаимная блокировка флагов?)' };
-  for (const k in rts) if (rts[k].waitStart !== null)
+  if (t >= MAX_T) throw new ParseError(0, 'Сценарий не завершается за 120с. Проверьте условия и флаги.');
+
+  for (const k in rts) if (rts[k].waitStart !== null) {
     clips.push({ track: k, label: 'ждёт (не дождались)', start: rts[k].waitStart, end: t, wait: true });
-  // === Пост-обработка клипов для наглядной дорожки ===
+  }
+
   for (const k of ['world', 'actor', 'camera']) {
-    let list = clips.filter(c => c.track === k);
-    if (k === 'camera') list = list.filter(c => !c.wait); // у камеры режим действует и во время ожидания
-    list.sort((a, b) => a.start - b.start || (a.wait ? -1 : 1));
-    // 1) склеиваем мгновенные команды, исполненные в одном кадре
-    const merged = [];
+    const list = clips.filter(c => c.track === k && !c.wait).sort((a, b) => a.start - b.start);
+    const all = clips.filter(c => c.track === k).sort((a, b) => a.start - b.start);
     for (const c of list) {
-      const prev = merged[merged.length - 1];
-      if (!c.wait && c.end - c.start < .05 && prev && !prev.wait && prev.end - prev.start < .05 && Math.abs(prev.start - c.start) < 1e-6) {
-        prev.label += ' · ' + c.label;
-      } else merged.push({ ...c });
-    }
-    // 2) мгновенную группу, за которой сразу стартует длительная команда, вписываем в неё
-    const out = [];
-    for (let i = 0; i < merged.length; i++) {
-      const c = merged[i], next = merged[i + 1];
-      if (!c.wait && c.end - c.start < .05 && next && !next.wait && Math.abs(next.start - c.start) < 1e-6) {
-        next.label = c.label + ' · ' + next.label;
-      } else out.push(c);
-    }
-    // 3) оставшиеся мгновенные: камера — растягиваем до следующей команды, остальные — короткая метка
-    for (let i = 0; i < out.length; i++) {
-      const c = out[i];
-      if (!c.wait && c.end - c.start < .05) {
-        const next = out.slice(i + 1).find(o => o.start > c.start + 1e-6);
-        c.end = k === 'camera' ? (next ? next.start : t) : Math.min(c.start + .35, next ? next.start : c.start + .35);
-        if (c.end <= c.start) c.end = c.start + .2;
-        c.stretched = true;
+      if (c.end - c.start < .05) {
+        const next = all.find(o => o.start > c.start + 1e-6);
+        c.end = next ? next.start : t;
       }
     }
-    clips = clips.filter(c => c.track !== k).concat(out);
   }
   return { frames, clips, duration: frames.length * DT };
 }
@@ -606,7 +638,7 @@ function getState(baked, t) {
 }
 
 /* ============================================================
- * 4. РЕНДЕР (Canvas 2D): один источник мира → два окна + экспорт
+ * 5. РЕНДЕР
  * ============================================================ */
 function rr(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -645,11 +677,9 @@ function drawWindow(ctx, x, y, w, h, s, t) {
   ctx.moveTo(x, y + h / 2); ctx.lineTo(x + w, y + h / 2); ctx.lineWidth = 4; ctx.stroke();
 }
 
-function drawDoor(ctx, name, x, open) {
+function drawDoor(ctx, x, open) {
   const top = 350, bot = WORLD.floor;
-  // проём
   ctx.fillStyle = '#101018'; ctx.fillRect(x - 14, top, 28, bot - top);
-  // створка (уезжает вверх), видна только в проёме
   ctx.save();
   ctx.beginPath(); ctx.rect(x - 14, top, 28, bot - top); ctx.clip();
   const dy = -open * (bot - top - 6);
@@ -662,18 +692,14 @@ function drawDoor(ctx, name, x, open) {
 
 function drawWorld(ctx, s, t) {
   const F = WORLD.floor;
-  // фон за пределами мира (небо сверху, грунт снизу — чтобы отъезд камеры выглядел естественно)
-  ctx.fillStyle = '#10131d'; ctx.fillRect(-2000, -2000, WORLD.w + 4000, 2000);
-  ctx.fillStyle = '#1d2129'; ctx.fillRect(-2000, WORLD.h, WORLD.w + 4000, 2000);
-  ctx.fillStyle = '#0b0b12'; ctx.fillRect(-2000, 0, 2000, WORLD.h); ctx.fillRect(WORLD.w, 0, 2000, WORLD.h);
-  // потолочная лента интерьеров
-  ctx.fillStyle = '#161923'; ctx.fillRect(0, 0, 2220, 80);
+  ctx.fillStyle = '#0b0b12'; ctx.fillRect(-2000, -2000, WORLD.w + 4000, WORLD.h + 4000);
 
-  // === УЛИЦА: небо, силуэты, фонарь, дерево, скамейка ===
+  // Улица: небо, силуэты, фонарь, дерево
   const st = ZONES[3];
   const sky = ctx.createLinearGradient(0, 0, 0, F);
   sky.addColorStop(0, '#131a30'); sky.addColorStop(1, '#26314e');
   ctx.fillStyle = sky; ctx.fillRect(st.x0, 0, st.x1 - st.x0, F);
+
   ctx.fillStyle = '#1b2338';
   [[2280, 240, 150], [2470, 300, 120], [2860, 200, 170], [3060, 280, 130]].forEach(([x, y, w]) => {
     ctx.fillRect(x, y, w, F - y);
@@ -683,7 +709,8 @@ function drawWorld(ctx, s, t) {
         if (hash(wx * wy) > .45) ctx.fillRect(wx, wy, 14, 18);
     ctx.fillStyle = '#1b2338';
   });
-  // фонарь
+
+  // Фонарь
   ctx.strokeStyle = '#3d4658'; ctx.lineWidth = 8;
   ctx.beginPath(); ctx.moveTo(2620, F); ctx.lineTo(2620, 250); ctx.lineTo(2660, 250); ctx.stroke();
   ctx.fillStyle = s.lampStreet ? '#ffe082' : '#4a5266';
@@ -694,44 +721,42 @@ function drawWorld(ctx, s, t) {
     ctx.fillStyle = g;
     ctx.beginPath(); ctx.moveTo(2661, 255); ctx.lineTo(2540, F); ctx.lineTo(2790, F); ctx.closePath(); ctx.fill();
   }
-  // дерево
+
+  // Дерево
   ctx.fillStyle = '#3f3226'; ctx.fillRect(2960, 470, 22, F - 470);
   ctx.fillStyle = '#2f4a35';
   [[2971, 430, 62], [2930, 470, 44], [3015, 465, 46]].forEach(([x, y, r]) => { ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); });
-  // скамейка
+
+  // Скамейка
   ctx.fillStyle = '#4e4034'; ctx.fillRect(2800, 560, 120, 12);
   ctx.fillRect(2806, 572, 10, F - 572); ctx.fillRect(2904, 572, 10, F - 572);
   ctx.fillRect(2800, 520, 120, 8);
 
-  // === ИНТЕРЬЕРЫ ===
+  // Интерьеры
   for (let zi = 0; zi < 3; zi++) {
     const z = ZONES[zi];
     ctx.fillStyle = z.wall; ctx.fillRect(z.x0, 80, z.x1 - z.x0, F - 80);
-    ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.fillRect(z.x0, 80, z.x1 - z.x0, 26); // тень потолка
-    // плинтус
+    ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.fillRect(z.x0, 80, z.x1 - z.x0, 26);
     ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(z.x0, F - 12, z.x1 - z.x0, 12);
   }
-  // стены-пилястры между зонами (с дверными проёмами)
+
   for (const name in DOORS) {
     const x = DOORS[name];
     ctx.fillStyle = '#1e222e'; ctx.fillRect(x - 16, 80, 32, 350 - 80);
-    drawDoor(ctx, name, x, s.doors[name]);
+    drawDoor(ctx, x, s.doors[name]);
   }
-  // левая внешняя стена
   ctx.fillStyle = '#1e222e'; ctx.fillRect(-20, 0, 24, F);
 
-  // --- Кабинет: окно, стол, ноутбук, лампа, постер ---
+  // Кабинет
   drawWindow(ctx, 130, 200, 190, 220, s, t);
-  // постер
   ctx.fillStyle = '#3b4a6b'; rr(ctx, 690, 210, 90, 120, 6); ctx.fill();
   ctx.fillStyle = '#8fa8d8'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText('SHIP IT', 735, 265); ctx.font = '11px sans-serif'; ctx.fillText('🚀', 735, 295);
-  // стол
+  ctx.fillText('SHIP IT', 735, 265);
+  ctx.font = '11px sans-serif'; ctx.fillText('🚀', 735, 295);
   ctx.fillStyle = '#5a4632'; ctx.fillRect(430, 520, 240, 14);
   ctx.fillRect(444, 534, 12, F - 534); ctx.fillRect(644, 534, 12, F - 534);
-  // ноутбук
-  ctx.fillStyle = '#22262e'; ctx.fillRect(520, 508, 90, 12); // база
-  ctx.fillStyle = '#161a22'; rr(ctx, 525, 440, 82, 70, 4); ctx.fill(); // крышка
+  ctx.fillStyle = '#22262e'; ctx.fillRect(520, 508, 90, 12);
+  ctx.fillStyle = '#161a22'; rr(ctx, 525, 440, 82, 70, 4); ctx.fill();
   if (s.monitor !== 'off') {
     let scr = '#1c3a5e';
     if (s.screen === 'Ошибка404') scr = '#4a1420';
@@ -747,13 +772,11 @@ function drawWorld(ctx, s, t) {
     } else {
       ctx.fillStyle = '#90caf9'; ctx.font = '9px monospace'; ctx.fillText('ready_', 566, 478);
     }
-    // свечение экрана
     const g = ctx.createRadialGradient(566, 475, 8, 566, 475, 120);
     g.addColorStop(0, s.screen === 'Ошибка404' ? 'rgba(255,80,80,.16)' : 'rgba(120,190,255,.14)');
     g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = g; ctx.fillRect(446, 355, 240, 240);
   }
-  // настольная лампа
   ctx.strokeStyle = '#4a5266'; ctx.lineWidth = 5;
   ctx.beginPath(); ctx.moveTo(650, 520); ctx.lineTo(658, 478); ctx.lineTo(636, 462); ctx.stroke();
   ctx.fillStyle = s.lampDesk ? '#ffe082' : '#4a5266';
@@ -764,36 +787,35 @@ function drawWorld(ctx, s, t) {
     ctx.fillStyle = g; ctx.fillRect(490, 330, 290, 290);
   }
 
-  // --- Коридор: часы, картины ---
+  // Коридор: часы, картины
   ctx.fillStyle = '#eceff1'; ctx.beginPath(); ctx.arc(1120, 250, 46, 0, 7); ctx.fill();
   ctx.strokeStyle = '#37474f'; ctx.lineWidth = 6; ctx.stroke();
   ctx.strokeStyle = '#263238'; ctx.lineWidth = 4;
   ctx.beginPath(); ctx.moveTo(1120, 250);
-  ctx.lineTo(1120 + Math.sin(t * .8) * 32, 250 - Math.cos(t * .8) * 32); ctx.stroke(); // минутная
+  ctx.lineTo(1120 + Math.sin(t * .8) * 32, 250 - Math.cos(t * .8) * 32); ctx.stroke();
   ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(1120, 250);
-  ctx.lineTo(1120 + Math.sin(t * .07 + 2) * 20, 250 - Math.cos(t * .07 + 2) * 20); ctx.stroke(); // часовая
+  ctx.lineTo(1120 + Math.sin(t * .07 + 2) * 20, 250 - Math.cos(t * .07 + 2) * 20); ctx.stroke();
   ctx.fillStyle = '#37474f';
   [[950, 240], [1290, 260]].forEach(([x, y]) => { rr(ctx, x - 30, y - 40, 60, 80, 4); ctx.fill(); });
   ctx.fillStyle = '#5c6b8a';
   [[950, 240], [1290, 260]].forEach(([x, y]) => { ctx.fillRect(x - 22, y - 32, 44, 64); });
 
-  // --- Кафе: окно, меню, стойка, кофемашина, подвесные лампы ---
+  // Кафе
   drawWindow(ctx, 1470, 210, 180, 210, s, t);
   ctx.fillStyle = '#25201c'; rr(ctx, 1760, 180, 190, 120, 8); ctx.fill();
   ctx.fillStyle = '#ffcc80'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
   ctx.fillText('☕ МЕНЮ', 1855, 210);
   ctx.font = '11px sans-serif'; ctx.fillStyle = '#d7ccc8';
-  ctx.fillText('эспрессо · 120', 1855, 235); ctx.fillText('латте · 180', 1855, 255); ctx.fillText('раф · 210', 1855, 275);
-  // стойка
+  ctx.fillText('эспрессо · 120', 1855, 235);
+  ctx.fillText('латте · 180', 1855, 255);
+  ctx.fillText('раф · 210', 1855, 275);
   ctx.fillStyle = '#5d4037'; ctx.fillRect(1700, 500, 460, 22);
   ctx.fillStyle = '#4e342e'; ctx.fillRect(1710, 522, 440, F - 522);
   ctx.fillStyle = 'rgba(255,255,255,.05)'; ctx.fillRect(1710, 522, 440, 8);
-  // кофемашина
   ctx.fillStyle = '#78909c'; rr(ctx, 1950, 430, 72, 70, 6); ctx.fill();
   ctx.fillStyle = '#546e7a'; ctx.fillRect(1958, 445, 56, 18);
   ctx.fillStyle = '#37474f'; ctx.fillRect(1975, 478, 22, 14);
   ctx.fillStyle = '#ff7043'; ctx.beginPath(); ctx.arc(2010, 440, 4, 0, 7); ctx.fill();
-  // подвесные лампы
   [1560, 1850, 2100].forEach(x => {
     ctx.strokeStyle = '#3a3a48'; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.moveTo(x, 80); ctx.lineTo(x, 160); ctx.stroke();
@@ -803,16 +825,15 @@ function drawWorld(ctx, s, t) {
     ctx.fillStyle = g; ctx.fillRect(x - 110, 90, 220, 220);
   });
 
-  // === ПОЛ (единая лента) ===
+  // Пол
   ctx.fillStyle = '#262b33'; ctx.fillRect(0, F, WORLD.w, WORLD.h - F);
   for (const z of ZONES) { ctx.fillStyle = z.floorC; ctx.fillRect(z.x0, F, z.x1 - z.x0, 14); }
   ctx.strokeStyle = '#4fc3f7'; ctx.lineWidth = 3; ctx.globalAlpha = .5;
   ctx.beginPath(); ctx.moveTo(0, F); ctx.lineTo(WORLD.w, F); ctx.stroke();
   ctx.globalAlpha = 1;
 
-  // дождь на улице (поверх сцены)
   drawRain(ctx, 2220, 3200, 0, F + 40, t, s.rain);
-  if (s.rain > .05) { // лужи-блики
+  if (s.rain > .05) {
     ctx.fillStyle = 'rgba(140,180,255,' + (.12 * s.rain) + ')';
     [[2350, 660, 60], [2700, 680, 90], [3000, 665, 70]].forEach(([x, y, w]) => {
       ctx.beginPath(); ctx.ellipse(x, y, w, 6, 0, 0, 7); ctx.fill();
@@ -820,7 +841,6 @@ function drawWorld(ctx, s, t) {
   }
 }
 
-/* --- Скелетный персонаж --- */
 function drawActor(ctx, s, t) {
   const F = WORLD.floor, p = s.pose, wb = s.walkBlend;
   const phase = s.ax * .045;
@@ -828,7 +848,7 @@ function drawActor(ctx, s, t) {
   const breathe = Math.sin(t * 2) * 1.2 * (1 - wb);
   ctx.save();
   ctx.translate(s.ax, F);
-  // тень
+
   ctx.fillStyle = 'rgba(0,0,0,.4)';
   ctx.beginPath(); ctx.ellipse(0, 2, 30, 6, 0, 0, 7); ctx.fill();
   ctx.scale(s.dir, 1);
@@ -836,7 +856,6 @@ function drawActor(ctx, s, t) {
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 
   const hipY = -80;
-  // ноги: 2-звенные (бедро+голень), походка перекрывает позу
   for (const side of [-1, 1]) {
     const off = side > 0 ? 0 : Math.PI;
     const swing = lerp(side * .07, Math.sin(phase + off) * .55, wb);
@@ -847,22 +866,22 @@ function drawActor(ctx, s, t) {
     ctx.strokeStyle = side > 0 ? '#64b5f6' : '#90caf9'; ctx.lineWidth = 9;
     ctx.beginPath(); ctx.moveTo(hx, hipY); ctx.lineTo(kx, ky); ctx.lineTo(fx, fy); ctx.stroke();
   }
-  // корпус
+
   const lean = p.lean;
   const sx = Math.sin(lean) * 52, sy = hipY - Math.cos(lean) * 52 + breathe;
   ctx.strokeStyle = '#ff7043'; ctx.lineWidth = 28;
   ctx.beginPath(); ctx.moveTo(0, hipY); ctx.lineTo(sx, sy); ctx.stroke();
-  // руки
+
   const walkArmL = Math.sin(phase + Math.PI) * .5, walkArmR = Math.sin(phase) * .5;
   const arms = [
-    { a1: lerp(p.aL1, walkArmL, wb), a2: lerp(p.aL2, .3, wb), col: '#e64a19', back: true },
-    { a1: lerp(p.aR1, walkArmR, wb), a2: lerp(p.aR2, .3, wb), col: '#ff8a65', back: false }
+    { a1: lerp(p.aL1, walkArmL, wb), a2: lerp(p.aL2, .3, wb), col: '#e64a19' },
+    { a1: lerp(p.aR1, walkArmR, wb), a2: lerp(p.aR2, .3, wb), col: '#ff8a65' }
   ];
-  // живые микродвижения поз
   if (wb < .5) {
     if (s.poseName === 'ПьетКофе') arms[1].a2 += Math.sin(t * 3) * .16 * (1 - wb * 2);
     if (s.poseName === 'Машет') arms[1].a2 += Math.sin(t * 9) * .38 * (1 - wb * 2);
   }
+
   const drawArm = (arm) => {
     const ex = sx + Math.sin(arm.a1) * 26, ey = sy + Math.cos(arm.a1) * 26;
     const hx = ex + Math.sin(arm.a1 + arm.a2) * 24, hy = ey + Math.cos(arm.a1 + arm.a2) * 24;
@@ -870,61 +889,56 @@ function drawActor(ctx, s, t) {
     ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.lineTo(hx, hy); ctx.stroke();
     return [hx, hy];
   };
-  drawArm(arms[0]); // дальняя рука
-  // голова
+  drawArm(arms[0]);
+
   const hAng = lean + p.tilt;
   const hx = sx + Math.sin(hAng) * 30, hy = sy - Math.cos(hAng) * 30;
   ctx.fillStyle = '#ffcc80'; ctx.beginPath(); ctx.arc(hx, hy, 20, 0, 7); ctx.fill();
-  ctx.fillStyle = '#263238'; ctx.beginPath(); ctx.arc(hx + 9, hy - 3, 3.4, 0, 7); ctx.fill(); // глаз
-  // рот по позе
+  ctx.fillStyle = '#263238'; ctx.beginPath(); ctx.arc(hx + 9, hy - 3, 3.4, 0, 7); ctx.fill();
   ctx.strokeStyle = '#8d6e63'; ctx.lineWidth = 2;
   ctx.beginPath();
   if (s.poseName === 'Фейспалм') { ctx.arc(hx + 8, hy + 10, 4, Math.PI * 1.15, Math.PI * 1.85); }
   else if (s.poseName === 'Машет' || s.poseName === 'ПьетКофе') { ctx.arc(hx + 8, hy + 6, 5, .2, Math.PI - .4); }
   else { ctx.moveTo(hx + 4, hy + 9); ctx.lineTo(hx + 13, hy + 9); }
   ctx.stroke();
-  const hand = drawArm(arms[1]); // ближняя рука
-  // чашка в руке
+
+  const hand = drawArm(arms[1]);
   if (p.cup > .5 && wb < .5) {
     ctx.fillStyle = '#eceff1'; rr(ctx, hand[0] - 7, hand[1] - 12, 15, 13, 3); ctx.fill();
     ctx.strokeStyle = '#eceff1'; ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.arc(hand[0] + 10, hand[1] - 6, 4, -Math.PI / 2, Math.PI / 2); ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(hand[0], hand[1] - 15);
-    ctx.quadraticCurveTo(hand[0] + 4, hand[1] - 22, hand[0], hand[1] - 28); ctx.stroke();
   }
   ctx.restore();
 
-  // === ЭМОЦИИ (в мировых координатах, над головой) ===
   if (s.emotion) {
     const e = s.emotion, age = t - e.t0, k = age / e.dur;
     const fade = k < .15 ? k / .15 : k > .8 ? (1 - k) / .2 : 1;
-    const headX = s.ax, headY = F - 165;
+    const hx0 = s.ax, hy0 = F - 165;
     ctx.save(); ctx.globalAlpha = clamp(fade, 0, 1);
     if (e.type === 'ПарИзУшей') {
       for (const side of [-1, 1]) for (let i = 0; i < 3; i++) {
         const ph = (age * 1.4 + i * .33) % 1;
         ctx.fillStyle = 'rgba(230,230,240,' + (.7 * (1 - ph)) + ')';
         ctx.beginPath();
-        ctx.arc(headX + side * (26 + ph * 10), headY - 4 - ph * 46, 5 + ph * 7, 0, 7); ctx.fill();
+        ctx.arc(hx0 + side * (26 + ph * 10), hy0 - 4 - ph * 46, 5 + ph * 7, 0, 7); ctx.fill();
       }
     } else if (e.type === 'Сердце') {
       ctx.fillStyle = '#ef5350'; ctx.font = 'bold 26px sans-serif'; ctx.textAlign = 'center';
       for (let i = 0; i < 3; i++) {
         const ph = (age * .9 + i * .33) % 1;
         ctx.globalAlpha = clamp(fade, 0, 1) * (1 - ph);
-        ctx.fillText('♥', headX + Math.sin(ph * 6 + i) * 16 + (i - 1) * 20, headY - 14 - ph * 60);
+        ctx.fillText('♥', hx0 + Math.sin(ph * 6 + i) * 16 + (i - 1) * 20, hy0 - 14 - ph * 60);
       }
     } else if (e.type === 'Удивление' || e.type === 'Вопрос') {
       const ch = e.type === 'Удивление' ? '!' : '?';
       const bob = Math.abs(Math.sin(age * 6)) * 8;
       ctx.fillStyle = e.type === 'Удивление' ? '#ffee58' : '#80deea';
       ctx.font = 'bold 42px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText(ch, headX + 30, headY - 22 - bob);
+      ctx.fillText(ch, hx0 + 30, hy0 - 22 - bob);
     }
     ctx.restore();
   }
-  // === РЕПЛИКА ===
+
   if (s.bubble) {
     const b = s.bubble, age = t - b.t0;
     const pop = Math.min(1, age / .18);
@@ -936,13 +950,13 @@ function drawActor(ctx, s, t) {
     const bx = s.ax - bw / 2, by = WORLD.floor - 240 - (1 - pop) * 10;
     ctx.translate(s.ax, by + bh); ctx.scale(pop, pop); ctx.translate(-s.ax, -(by + bh));
     ctx.fillStyle = '#fafafa'; rr(ctx, bx, by, bw, bh, 10); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(s.ax - 7, by + bh - 1); ctx.lineTo(s.ax + 7, by + bh - 1); ctx.lineTo(s.ax, by + bh + 10); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(s.ax - 7, by + bh - 1); ctx.lineTo(s.ax + 7, by + bh - 1);
+    ctx.lineTo(s.ax, by + bh + 10); ctx.closePath(); ctx.fill();
     ctx.fillStyle = '#263238'; ctx.textAlign = 'center'; ctx.fillText(b.text, s.ax, by + 24);
     ctx.restore();
   }
 }
 
-/* Отрисовка сцены в произвольное окно (мировые координаты → canvas). */
 function renderScene(ctx, cw, ch, view, s, t) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, cw, ch);
@@ -951,7 +965,6 @@ function renderScene(ctx, cw, ch, view, s, t) {
   ctx.setTransform(sc, 0, 0, sc, -view.x * sc, -view.y * sc);
   drawWorld(ctx, s, t);
   drawActor(ctx, s, t);
-  // вспышка монтажного ката
   const sinceCut = t - s.cam.cutT;
   if (sinceCut >= 0 && sinceCut < .18) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -966,23 +979,21 @@ function camView(s) {
   return { x: s.cam.x - vw / 2, y: s.cam.y - vh / 2, w: vw, h: vh };
 }
 
-/* Режиссёрский обзор: весь мир + рамка камеры + подписи зон и точек. */
 function renderOverview(ctx, cw, ch, s, t) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, cw, ch);
-  ctx.fillStyle = '#0e0e15'; ctx.fillRect(0, 0, cw, ch);
+  ctx.fillStyle = '#050508'; ctx.fillRect(0, 0, cw, ch);
   const sc = Math.min(cw / WORLD.w, ch / WORLD.h);
   const ox = (cw - WORLD.w * sc) / 2, oy = (ch - WORLD.h * sc) / 2;
   ctx.setTransform(sc, 0, 0, sc, ox, oy);
   drawWorld(ctx, s, t);
   drawActor(ctx, s, t);
-  // подписи зон
+
   ctx.textAlign = 'center'; ctx.font = '600 30px sans-serif';
   for (const z of ZONES) {
     ctx.fillStyle = 'rgba(79,195,247,.75)';
     ctx.fillText(z.name.toUpperCase(), (z.x0 + z.x1) / 2, 52);
   }
-  // опорные точки
   ctx.font = '20px monospace';
   for (const name in POINTS) {
     const x = POINTS[name];
@@ -991,7 +1002,7 @@ function renderOverview(ctx, cw, ch, s, t) {
     ctx.fillStyle = 'rgba(255,183,77,.85)';
     ctx.fillText('⚑' + name, x, WORLD.floor + 66);
   }
-  // рамка камеры 9:16
+
   const v = camView(s);
   ctx.fillStyle = 'rgba(79,195,247,.10)';
   ctx.fillRect(v.x, v.y, v.w, v.h);
@@ -1004,7 +1015,7 @@ function renderOverview(ctx, cw, ch, s, t) {
 }
 
 /* ============================================================
- * 5. СЦЕНАРИЙ ПО УМОЛЧАНИЮ (пример из диалога, расширенный)
+ * 6. СЦЕНАРИЙ ПО УМОЛЧАНИЮ
  * ============================================================ */
 const DEFAULT_SCRIPT = `// ═══ ТАЙМЛАЙН 1: МИР ═══
 === МИР ===
@@ -1019,7 +1030,7 @@ const DEFAULT_SCRIPT = `// ═══ ТАЙМЛАЙН 1: МИР ═══
 === ПЕРСОНАЖ ===
 [Ждать:0.6] [ИдтиК:Стол] [Поза:СмотритВЭкран] [Флаг:ГеройУСтола]
 [Ждать:1.2] [Поза:Фейспалм] [Эмоция:ПарИзУшей:2.2] [Ждать:2.2]
-[ВзвестиФлаг:ГеройИдетВКафе] [Поза:Стоит] [ИдтиК:Кофемашина] [Флаг:ГеройВКафе]
+[Поза:Стоит] [Флаг:ГеройИдетВКафе] [ИдтиК:Кофемашина] [Флаг:ГеройВКафе]
 [Поза:ПьетКофе] [Эмоция:Сердце:1.6] [Ждать:2.4]
 [Поза:Стоит] [ИдтиК:Улица] [Флаг:ГеройНаУлице]
 [Поза:Машет] [Сказать:Какой день!:2] [Ждать:2.2]
@@ -1034,25 +1045,46 @@ const DEFAULT_SCRIPT = `// ═══ ТАЙМЛАЙН 1: МИР ═══
 [Флаг:ГеройНаУлице] [СледитьЗа:Герой:1.25:30] [Наезд:1.5:1.0] [Ждать:1.5]`;
 
 /* ============================================================
- * 6. UI: плеер, таймлайны, редактор, экспорт
+ * 7. UI
  * ============================================================ */
+const STORAGE_KEY = 'kinostudiya:project';
+const STORAGE_KEY_SCRIPT = 'kinostudiya:script';
+
 function initUI() {
   const camCanvas = document.getElementById('cam-canvas');
-  const ovCanvas = document.getElementById('overview-canvas');
+  const ovCanvas = document.getElementById('ov-canvas');
   const camCtx = camCanvas.getContext('2d');
   const ovCtx = ovCanvas.getContext('2d');
   const editor = document.getElementById('script-editor');
-  const errBox = document.getElementById('error-box');
+  const errBox = document.getElementById('editor-error');
   const scrubber = document.getElementById('scrubber');
   const btnPlay = document.getElementById('btn-play');
   const tlContainer = document.getElementById('timelines-ui');
   const bb = document.getElementById('blackboard');
+  const inspectorBody = document.getElementById('inspector-body');
+  const stateBadge = document.getElementById('state-badge');
+  const projectNameInput = document.getElementById('project-name');
 
-  let baked = null, currentTime = 0, isPlaying = false, lastTs = null;
-  let recording = null; // { recorder, canvas, ctx, chunks }
+  let baked = null;
+  let currentTime = 0;
+  let isPlaying = false;
+  let lastTs = null;
+  let recording = null;
+  let selectedClip = null;
   let lastFlagsKey = '';
 
-  editor.value = DEFAULT_SCRIPT;
+  // Восстановление проекта
+  const savedScript = localStorage.getItem(STORAGE_KEY_SCRIPT);
+  const savedProject = localStorage.getItem(STORAGE_KEY);
+  if (savedProject) {
+    try {
+      const p = JSON.parse(savedProject);
+      if (p.name) projectNameInput.value = p.name;
+      editor.value = p.script || DEFAULT_SCRIPT;
+    } catch { editor.value = savedScript || DEFAULT_SCRIPT; }
+  } else {
+    editor.value = savedScript || DEFAULT_SCRIPT;
+  }
 
   function sizeOverview() {
     const r = ovCanvas.parentElement.getBoundingClientRect();
@@ -1070,42 +1102,125 @@ function initUI() {
       { key: 'camera', title: '3. Камера', cls: 'camera' }
     ];
     for (const tr of tracks) {
-      const row = document.createElement('div'); row.className = 'track';
-      const lbl = document.createElement('div'); lbl.className = 'track-label'; lbl.textContent = tr.title;
-      const bar = document.createElement('div'); bar.className = 'track-bar';
+      const row = document.createElement('div');
+      row.className = 'track';
+      const header = document.createElement('div');
+      header.className = 'track-header';
+      header.innerHTML = `<span class="track-label">${tr.title}</span>`;
+      const bar = document.createElement('div');
+      bar.className = 'track-bar';
       bar.addEventListener('click', e => {
+        if (e.target !== bar) return;
         const r = bar.getBoundingClientRect();
         seek((e.clientX - r.left) / r.width * baked.duration);
       });
-      const trackClips = baked.clips.filter(c => c.track === tr.key)
-        .sort((a, b) => (a.wait ? 0 : 1) - (b.wait ? 0 : 1) || a.start - b.start);
-      for (const c of trackClips) {
+      for (const c of baked.clips.filter(c => c.track === tr.key)) {
         const el = document.createElement('div');
         el.className = 'clip ' + (c.wait ? 'wait' : tr.cls);
         el.style.left = (c.start / baked.duration * 100) + '%';
-        el.style.width = Math.max(.4, (c.end - c.start) / baked.duration * 100) + '%';
+        el.style.width = Math.max(.5, (c.end - c.start) / baked.duration * 100) + '%';
         el.textContent = c.label;
         el.title = c.label + '  [' + c.start.toFixed(2) + '–' + c.end.toFixed(2) + 's]';
+        if (selectedClip && selectedClip.start === c.start && selectedClip.track === c.track && selectedClip.label === c.label) {
+          el.classList.add('selected');
+        }
+        el.addEventListener('click', ev => {
+          ev.stopPropagation();
+          selectedClip = c;
+          seek(c.start + 0.01);
+          renderInspector();
+          buildTimelines();
+        });
         bar.appendChild(el);
       }
-      const ph = document.createElement('div'); ph.className = 'playhead';
+      const ph = document.createElement('div');
+      ph.className = 'playhead';
       bar.appendChild(ph);
-      row.appendChild(lbl); row.appendChild(bar);
+      row.appendChild(header);
+      row.appendChild(bar);
       tlContainer.appendChild(row);
     }
+  }
+
+  function renderInspector() {
+    if (!selectedClip) {
+      inspectorBody.innerHTML = '<div class="empty">Кликните на клип в таймлайне,<br>чтобы увидеть его параметры.</div>';
+      return;
+    }
+    const c = selectedClip;
+    const cls = c.wait ? 'wait' : c.track;
+    const trackName = { world: 'Мир', actor: 'Персонаж', camera: 'Камера' }[c.track] || c.track;
+    let html = `<div class="clip-info">
+      <span class="type-badge ${cls}">${trackName}</span>
+      <div><b>${escapeHtml(c.label)}</b></div>
+      <div style="color:var(--text-dim);margin-top:4px;font-size:11px">
+        ${c.start.toFixed(2)}s → ${c.end.toFixed(2)}s (${(c.end - c.start).toFixed(2)}s)
+      </div>`;
+    if (c.line) html += `<div class="line-ref">DSL строка ${c.line}</div>`;
+    html += '</div>';
+
+    if (c.cmd) {
+      html += `<div class="field"><label>Команда</label>
+        <input type="text" value="${escapeHtml(c.cmd)}" readonly></div>`;
+    }
+    if (c.args && c.args.length) {
+      html += `<div class="field"><label>Аргументы</label>
+        <input type="text" value="${escapeHtml(c.args.join(' · '))}" readonly></div>`;
+    }
+    if (c.line) {
+      html += `<button class="secondary" onclick="jumpToLine(${c.line})">✎ Перейти к строке в редакторе</button>`;
+    }
+    html += `<button class="danger" onclick="seekClipStart()">→ В начало клипа</button>`;
+    inspectorBody.innerHTML = html;
+  }
+
+  window.jumpToLine = (line) => {
+    const lines = editor.value.split('\n');
+    let pos = 0;
+    for (let i = 0; i < line - 1 && i < lines.length; i++) pos += lines[i].length + 1;
+    const end = pos + (lines[line - 1]?.length || 0);
+    editor.focus();
+    editor.setSelectionRange(pos, end);
+    // Прокрутка к выделению
+    const lineHeight = 19;
+    editor.scrollTop = Math.max(0, (line - 3) * lineHeight);
+  };
+  window.seekClipStart = () => {
+    if (selectedClip) seek(selectedClip.start + 0.01);
+  };
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
   function applyScript() {
     try {
       const tracks = parseScript(editor.value);
       baked = bake(tracks);
-      errBox.style.display = 'none';
+      errBox.classList.remove('visible');
+      errBox.textContent = '';
       scrubber.max = baked.duration.toFixed(2);
+      selectedClip = null;
       buildTimelines();
-      stopPlay(); seek(0);
+      renderInspector();
+      stopPlay();
+      seek(0);
+      saveProject();
     } catch (err) {
-      errBox.style.display = 'block';
-      errBox.textContent = err.line ? ('Строка ' + err.line + ': ' + err.msg) : ('Ошибка: ' + (err.msg || err));
+      errBox.classList.add('visible');
+      if (err.line > 0) {
+        errBox.textContent = `Строка ${err.line}: ${err.msg}`;
+        // Подсветка строки
+        const lines = editor.value.split('\n');
+        let pos = 0;
+        for (let i = 0; i < err.line - 1 && i < lines.length; i++) pos += lines[i].length + 1;
+        const end = pos + (lines[err.line - 1]?.length || 0);
+        editor.focus();
+        editor.setSelectionRange(pos, end);
+        editor.scrollTop = Math.max(0, (err.line - 3) * 19);
+      } else {
+        errBox.textContent = 'Ошибка: ' + (err.msg || err);
+      }
     }
   }
 
@@ -1114,31 +1229,42 @@ function initUI() {
     const s = getState(baked, currentTime);
     renderScene(camCtx, camCanvas.width, camCanvas.height, camView(s), s, currentTime);
     renderOverview(ovCtx, ovCanvas.width, ovCanvas.height, s, currentTime);
-    if (recording) renderScene(recording.ctx, recording.canvas.width, recording.canvas.height, camView(s), s, currentTime);
-    // UI
+    if (recording) {
+      renderScene(recording.ctx, recording.canvas.width, recording.canvas.height, camView(s), s, currentTime);
+    }
     scrubber.value = currentTime;
-    document.getElementById('timecode').textContent = currentTime.toFixed(2) + ' / ' + baked.duration.toFixed(2) + 's';
+    document.getElementById('timecode').textContent = currentTime.toFixed(2) + ' / ' + baked.duration.toFixed(2) + ' s';
     document.getElementById('zoom-badge').textContent = s.cam.zoom.toFixed(2) + '×';
-    document.getElementById('state-badge').textContent = s.status;
-    document.querySelectorAll('.playhead').forEach(ph => ph.style.left = (currentTime / baked.duration * 100) + '%');
+    stateBadge.textContent = s.status;
+    document.querySelectorAll('.playhead').forEach(ph => {
+      ph.style.left = (currentTime / baked.duration * 100) + '%';
+    });
     const fk = s.flags.join('|');
     if (fk !== lastFlagsKey) {
       lastFlagsKey = fk;
-      bb.innerHTML = '<span class="bb-title">Blackboard:</span>';
+      bb.innerHTML = '<span class="label">Blackboard:</span>';
       if (!s.flags.length) {
-        const el = document.createElement('span'); el.className = 'flag off'; el.textContent = 'пусто';
+        const el = document.createElement('span');
+        el.className = 'flag empty';
+        el.textContent = 'пусто';
         bb.appendChild(el);
       }
       for (const f of s.flags) {
-        const el = document.createElement('span'); el.className = 'flag'; el.textContent = '⚑ ' + f;
+        const el = document.createElement('span');
+        el.className = 'flag';
+        el.textContent = '⚑ ' + f;
         bb.appendChild(el);
       }
     }
   }
 
-  function seek(t) { currentTime = clamp(t, 0, baked ? baked.duration : 0); render(); }
+  function seek(t) {
+    currentTime = clamp(t, 0, baked ? baked.duration : 0);
+    render();
+  }
   function stopPlay() {
-    isPlaying = false; lastTs = null;
+    isPlaying = false;
+    lastTs = null;
     btnPlay.textContent = '▶ Старт';
   }
   function loop(ts) {
@@ -1147,9 +1273,17 @@ function initUI() {
         const speed = recording ? 1 : parseFloat(document.getElementById('speed').value);
         currentTime += (ts - lastTs) / 1000 * speed;
         if (currentTime >= baked.duration) {
-          if (recording) { currentTime = baked.duration; render(); finishRecording(); stopPlay(); }
-          else if (document.getElementById('loop').checked) currentTime = 0;
-          else { currentTime = baked.duration; stopPlay(); }
+          if (recording) {
+            currentTime = baked.duration;
+            render();
+            finishRecording();
+            stopPlay();
+          } else if (document.getElementById('loop').checked) {
+            currentTime = 0;
+          } else {
+            currentTime = baked.duration;
+            stopPlay();
+          }
         }
         render();
       }
@@ -1162,57 +1296,218 @@ function initUI() {
     if (recording) return;
     if (isPlaying) stopPlay();
     else {
+      if (!baked) return;
       if (currentTime >= baked.duration - .01) currentTime = 0;
-      isPlaying = true; lastTs = null; btnPlay.textContent = '⏸ Пауза';
+      isPlaying = true;
+      lastTs = null;
+      btnPlay.textContent = '⏸ Пауза';
     }
   });
-  document.getElementById('btn-reset').addEventListener('click', () => { if (!recording) { stopPlay(); seek(0); } });
-  scrubber.addEventListener('input', () => { if (!recording) seek(parseFloat(scrubber.value)); });
-  document.getElementById('btn-apply').addEventListener('click', () => { if (!recording) applyScript(); });
+
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    if (!recording) { stopPlay(); seek(0); }
+  });
+  scrubber.addEventListener('input', () => {
+    if (!recording) seek(parseFloat(scrubber.value));
+  });
+  document.getElementById('btn-apply').addEventListener('click', () => {
+    if (!recording) applyScript();
+  });
   document.getElementById('btn-restore').addEventListener('click', () => {
     if (recording) return;
-    editor.value = DEFAULT_SCRIPT; applyScript();
-  });
-  document.addEventListener('keydown', e => {
-    if (e.target === editor || recording) return;
-    if (e.code === 'Space') { e.preventDefault(); btnPlay.click(); }
-    if (e.code === 'ArrowLeft') seek(currentTime - (e.shiftKey ? 1 : 1 / FPS));
-    if (e.code === 'ArrowRight') seek(currentTime + (e.shiftKey ? 1 : 1 / FPS));
+    editor.value = DEFAULT_SCRIPT;
+    applyScript();
   });
 
-  /* --- Экспорт PNG-кадра 1080×1920 --- */
+  // Keyboard
+  document.addEventListener('keydown', e => {
+    if (e.target === editor || recording) return;
+    if (e.code === 'Space') {
+      e.preventDefault();
+      if (document.activeElement !== btnPlay) btnPlay.click();
+    }
+    if (e.code === 'ArrowLeft') {
+      e.preventDefault();
+      if (baked) seek(currentTime - (e.shiftKey ? 1 : 1 / FPS));
+    }
+    if (e.code === 'ArrowRight') {
+      e.preventDefault();
+      if (baked) seek(currentTime + (e.shiftKey ? 1 : 1 / FPS));
+    }
+    if (e.code === 'KeyS' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      downloadProject();
+    }
+  });
+
+  /* === Save / Load === */
+  function saveProject() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        name: projectNameInput.value,
+        script: editor.value,
+        savedAt: new Date().toISOString()
+      }));
+      localStorage.setItem(STORAGE_KEY_SCRIPT, editor.value);
+    } catch (e) { /* quota */ }
+  }
+  function downloadProject() {
+    const data = {
+      name: projectNameInput.value,
+      script: editor.value,
+      savedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (projectNameInput.value || 'project') + '.json';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
+  projectNameInput.addEventListener('input', saveProject);
+
+  document.getElementById('btn-save').addEventListener('click', downloadProject);
+  document.getElementById('btn-load').addEventListener('click', () => {
+    if (recording) return;
+    document.getElementById('file-input').click();
+  });
+  document.getElementById('file-input').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (data.script) {
+          editor.value = data.script;
+          if (data.name) projectNameInput.value = data.name;
+          applyScript();
+        } else {
+          // попытка как чистый DSL
+          editor.value = ev.target.result;
+          applyScript();
+        }
+      } catch (err) {
+        errBox.classList.add('visible');
+        errBox.textContent = 'Не удалось загрузить файл: ' + err.message;
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+  document.getElementById('btn-reset-all').addEventListener('click', () => {
+    if (recording) return;
+    if (!confirm('Сбросить проект к примеру по умолчанию?')) return;
+    editor.value = DEFAULT_SCRIPT;
+    projectNameInput.value = 'Мой проект';
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_KEY_SCRIPT);
+    applyScript();
+  });
+  document.getElementById('btn-help').addEventListener('click', () => {
+    alert(`📖 Справка по DSL
+
+СЕКЦИИ:
+  === МИР ===   === ПЕРСОНАЖ ===   === КАМЕРА ===
+
+УСЛОВИЯ:
+  [Время>2.5]        — когда t > 2.5
+  [Время>=2]         — когда t >= 2
+  [Флаг:Имя]         — ждать, пока флаг установлен
+  [НетФлага:Имя]     — ждать, пока флаг НЕ установлен
+
+ОБЩИЕ КОМАНДЫ:
+  [Ждать:1.5]        — пауза 1.5 с
+  [Флаг:Имя]         — установить флаг
+  [СбросФлага:Имя]   — сбросить флаг
+
+МИР:
+  [Дверь:Кабинет:открыть|закрыть]
+  [Лампа:Стол|Фонарь:вкл|выкл]
+  [Монитор:Ноутбук:вкл|выкл]
+  [Экран:Ноутбук:Ошибка404|Код|Пусто]
+  [Погода:дождь|ясно]
+
+ПЕРСОНАЖ:
+  [ИдтиК:Старт|Окно|Стол|Кофемашина|Улица|Фонарь]
+  [Скорость:260]
+  [Поза:Стоит|СмотритВЭкран|ПьетКофе|Фейспалм|Машет]
+  [Эмоция:ПарИзУшей|Сердце|Удивление|Вопрос:2]
+  [Сказать:Текст:2]
+
+КАМЕРА:
+  [СледитьЗа:Герой:1.2:40]
+  [Наезд:1.6:0.8]
+  [Фокус:Часы:1.6:0.8]
+  [Кадр:Герой:Голова:1.8:0.6]
+  [Кат:Улица:0.95]
+
+ГОРЯЧИЕ КЛАВИШИ:
+  Пробел     — play/pause
+  ←/→        — кадр
+  Shift+←/→  — 1 секунда
+  Ctrl+S     — сохранить проект`);
+  });
+
+  /* === PNG export === */
   document.getElementById('btn-png').addEventListener('click', () => {
-    const c = document.createElement('canvas'); c.width = 1080; c.height = 1920;
+    if (!baked) return;
+    const c = document.createElement('canvas');
+    c.width = 1080; c.height = 1920;
     const s = getState(baked, currentTime);
     renderScene(c.getContext('2d'), 1080, 1920, camView(s), s, currentTime);
     c.toBlob(b => downloadBlob(b, 'frame_' + currentTime.toFixed(2) + 's.png'), 'image/png');
   });
 
-  /* --- Экспорт видео: детерминированное воспроизведение → MediaRecorder --- */
-  const btnRec = document.getElementById('btn-rec');
+  /* === Video export === */
+  const btnVideo = document.getElementById('btn-video');
+  const recStatus = document.getElementById('rec-status');
+  const recText = document.getElementById('rec-text');
+
   function pickMime() {
-    const cands = ['video/mp4;codecs="avc1.42E01E"', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+    const cands = [
+      'video/mp4;codecs="avc1.42E01E"', 'video/mp4',
+      'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'
+    ];
     for (const m of cands) if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m;
     return null;
   }
   function downloadBlob(blob, name) {
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = name;
-    document.body.appendChild(a); a.click();
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
   }
   function finishRecording() {
     if (!recording) return;
-    const rec = recording;
-    rec.recorder.stop(); // onstop соберёт файл
+    recording.recorder.stop();
   }
-  btnRec.addEventListener('click', () => {
-    if (recording) { // ручная остановка
-      stopPlay(); finishRecording(); return;
+  function setControlsDisabled(d) {
+    ['btn-play', 'btn-reset', 'btn-apply', 'btn-restore', 'btn-png', 'btn-load', 'btn-save', 'btn-reset-all'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.disabled = d;
+    });
+    scrubber.disabled = d;
+    document.getElementById('speed').disabled = d;
+    document.getElementById('loop').disabled = d;
+  }
+  btnVideo.addEventListener('click', () => {
+    if (recording) {
+      stopPlay();
+      finishRecording();
+      return;
     }
+    if (!baked) return;
     const mime = pickMime();
-    if (!mime) { alert('Браузер не поддерживает MediaRecorder — экспорт видео недоступен.'); return; }
-    const c = document.createElement('canvas'); c.width = 1080; c.height = 1920;
+    if (!mime) {
+      alert('Браузер не поддерживает MediaRecorder. Экспорт видео недоступен.');
+      return;
+    }
+    const c = document.createElement('canvas');
+    c.width = 1080; c.height = 1920;
     const ctx = c.getContext('2d');
     const stream = c.captureStream(FPS);
     const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 10_000_000 });
@@ -1220,27 +1515,26 @@ function initUI() {
     rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
     rec.onstop = () => {
       const ext = mime.includes('mp4') ? 'mp4' : 'webm';
-      downloadBlob(new Blob(chunks, { type: mime }), 'vertical_film.' + ext);
+      downloadBlob(new Blob(chunks, { type: mime }), 'film.' + ext);
       recording = null;
-      btnRec.textContent = '⏺ Экспорт видео';
-      document.getElementById('rec-status').style.display = 'none';
+      btnVideo.textContent = '⏺ Видео';
+      recStatus.classList.remove('on');
       setControlsDisabled(false);
     };
     recording = { recorder: rec, canvas: c, ctx, chunks };
     setControlsDisabled(true);
-    btnRec.textContent = '⏹ Стоп';
-    document.getElementById('rec-status').style.display = 'block';
-    document.getElementById('rec-text').textContent =
-      'Запись 1080×1920 · ' + (mime.includes('mp4') ? 'MP4' : 'WebM') + ' · ' + baked.duration.toFixed(1) + 's (в реальном времени)';
-    seek(0); rec.start(250);
-    isPlaying = true; lastTs = null; btnPlay.textContent = '⏸ Пауза';
+    btnVideo.textContent = '⏹ Стоп';
+    recStatus.classList.add('on');
+    recText.textContent = 'Запись 1080×1920 · ' + (mime.includes('mp4') ? 'MP4' : 'WebM') +
+      ' · ' + baked.duration.toFixed(1) + 's';
+    seek(0);
+    rec.start(250);
+    isPlaying = true;
+    lastTs = null;
+    btnPlay.textContent = '⏸ Пауза';
   });
-  function setControlsDisabled(d) {
-    ['btn-play', 'btn-reset', 'btn-apply', 'btn-restore', 'btn-png'].forEach(id => document.getElementById(id).disabled = d);
-    scrubber.disabled = d;
-    document.getElementById('speed').disabled = d;
-  }
 
+  /* === Init === */
   sizeOverview();
   applyScript();
   requestAnimationFrame(loop);
