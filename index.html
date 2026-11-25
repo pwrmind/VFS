@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Виртуальная киностудия — Мир · Персонаж · Камера</title>
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --bg: #14141b; --panel: #1f1f2a; --panel2: #191922; --line: #32323f;
+    --accent: #4fc3f7; --world: #2e7d32; --actor: #ef6c00; --camera: #1565c0;
+    --text: #e2e2ea; --dim: #9a9aac;
+  }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg); color: var(--text);
+    margin: 0; padding: 12px; display: flex; flex-direction: column; gap: 12px;
+    min-height: 100vh;
+  }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  header h1 { font-size: 17px; margin: 0; color: var(--accent); letter-spacing: .3px; }
+  header .sub { font-size: 12px; color: var(--dim); }
+
+  .workspace { display: flex; gap: 12px; min-height: 520px; height: 66vh; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px; display: flex; flex-direction: column; gap: 10px; min-width: 0;
+  }
+  .panel h3 {
+    margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .6px;
+    color: var(--accent); display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  }
+  .badge {
+    font-family: ui-monospace, monospace; font-size: 11px; color: #ffb74d;
+    background: #14141c; border: 1px solid var(--line); padding: 2px 8px; border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  .preview-panel { width: 316px; flex-shrink: 0; align-items: stretch; }
+  .camera-frame {
+    flex: 1; min-height: 0; display: flex; justify-content: center; align-items: center;
+  }
+  .camera-frame canvas {
+    height: 100%; max-width: 100%; aspect-ratio: 9/16;
+    background: #0b0b12; border: 2px solid var(--accent); border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.55);
+  }
+  .preview-actions { display: flex; gap: 8px; }
+  .preview-actions button { flex: 1; }
+
+  .director-panel { flex: 1; }
+  .world-overview {
+    background: #0e0e15; border: 1px solid var(--line); border-radius: 8px;
+    height: 236px; flex-shrink: 0; overflow: hidden; position: relative;
+  }
+  .world-overview canvas { width: 100%; height: 100%; display: block; }
+
+  .controls {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: var(--panel2); border: 1px solid var(--line); padding: 8px 10px; border-radius: 8px;
+  }
+  button {
+    background: #00897b; color: #fff; border: none; padding: 7px 14px; border-radius: 6px;
+    cursor: pointer; font-weight: 600; font-size: 12px; font-family: inherit;
+  }
+  button:hover { filter: brightness(1.15); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button.secondary { background: #3949ab; }
+  button.warn { background: #c62828; }
+  button.ghost { background: #2c2c3a; border: 1px solid var(--line); }
+  select {
+    background: #14141c; color: var(--text); border: 1px solid var(--line);
+    border-radius: 6px; padding: 5px 6px; font-size: 12px; font-family: inherit;
+  }
+  input[type="range"] { flex: 1; min-width: 120px; cursor: pointer; accent-color: var(--accent); }
+  .timecode { font-family: ui-monospace, monospace; font-size: 13px; color: #ffb74d; min-width: 118px; text-align: right; }
+  label.chk { font-size: 12px; color: var(--dim); display: flex; gap: 5px; align-items: center; cursor: pointer; }
+
+  .timelines { display: flex; flex-direction: column; gap: 6px; }
+  .track { display: flex; align-items: center; gap: 10px; }
+  .track-label { width: 108px; font-size: 12px; font-weight: 600; color: var(--dim); flex-shrink: 0; }
+  .track-bar {
+    flex: 1; height: 30px; background: #12121a; border-radius: 5px; position: relative;
+    overflow: hidden; border: 1px solid #2b2b38; cursor: pointer;
+  }
+  .clip {
+    position: absolute; top: 3px; bottom: 3px; border-radius: 3px; font-size: 10.5px;
+    display: flex; align-items: center; padding: 0 6px; white-space: nowrap; overflow: hidden;
+    color: #fff; font-weight: 500; min-width: 5px;
+  }
+  .clip.world  { background: var(--world);  border-left: 3px solid #81c784; }
+  .clip.actor  { background: var(--actor);  border-left: 3px solid #ffcc80; }
+  .clip.camera { background: var(--camera); border-left: 3px solid #64b5f6; }
+  .clip.wait {
+    background: repeating-linear-gradient(45deg, #2a2a36, #2a2a36 5px, #232330 5px, #232330 10px);
+    border-left: 3px solid #55556a; color: #8f8fa6; font-style: italic;
+  }
+  .playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #ff5252; pointer-events: none; z-index: 5; }
+
+  .blackboard { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; min-height: 26px; }
+  .blackboard .bb-title { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .5px; margin-right: 4px; }
+  .flag {
+    font-size: 11px; font-family: ui-monospace, monospace; padding: 3px 9px; border-radius: 20px;
+    background: #173321; color: #81c784; border: 1px solid #2e7d32;
+  }
+  .flag.off { background: #1c1c26; color: #66667c; border-color: #2c2c3a; }
+
+  .editor-panel { gap: 8px; }
+  .editor-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .editor-head h3 { flex: 1; }
+  textarea {
+    width: 100%; height: 240px; resize: vertical; background: #101018; color: #d6e4ff;
+    border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+    font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; font-size: 12.5px; line-height: 1.55;
+    tab-size: 2;
+  }
+  textarea:focus { outline: 1px solid var(--accent); }
+  .error-box {
+    display: none; background: #3a1420; border: 1px solid #c62828; color: #ff8a80;
+    font-size: 12px; font-family: ui-monospace, monospace; padding: 8px 12px; border-radius: 6px; white-space: pre-wrap;
+  }
+  details { font-size: 12.5px; color: var(--dim); }
+  details summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: 12px; }
+  details .ref { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; margin-top: 8px; }
+  details .ref > div { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+  details .ref b { color: var(--text); display: block; margin-bottom: 5px; }
+  details code { color: #ffcc80; background: #14141c; padding: 1px 5px; border-radius: 4px; font-size: 11.5px; }
+  details li { margin: 3px 0; }
+  details ul { margin: 4px 0; padding-left: 18px; }
+  .req-list { columns: 2; column-gap: 24px; margin: 8px 0 2px; padding-left: 18px; }
+  .req-list li { margin: 3px 0; break-inside: avoid; }
+  .rec-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #ff5252; margin-right: 6px; animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: .25; } }
+  @media (max-width: 980px) {
+    .workspace { flex-direction: column; height: auto; }
+    .preview-panel { width: 100%; }
+    .camera-frame { height: 480px; }
+    .req-list { columns: 1; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎬 Виртуальная киностудия</h1>
+  <span class="sub">единый бесшовный мир · 3 таймлайна (Мир / Персонаж / Камера) · blackboard · детерминированный seek(t)</span>
+</header>
+
+<div class="workspace">
+  <!-- Итоговый вертикальный кадр 9:16 -->
+  <div class="panel preview-panel">
+    <h3><span>Камера 9:16 · 1080×1920</span><span class="badge" id="zoom-badge">1.00×</span></h3>
+    <div class="camera-frame"><canvas id="cam-canvas" width="540" height="960"></canvas></div>
+    <div class="preview-actions">
+      <button class="ghost" id="btn-png" title="Сохранить текущий кадр как PNG 1080×1920">🖼 PNG кадр</button>
+      <button class="warn" id="btn-rec" title="Записать весь ролик в видеофайл">⏺ Экспорт видео</button>
+    </div>
+    <div id="rec-status" style="font-size:11px;color:#ff8a80;display:none"><span class="rec-dot"></span><span id="rec-text">Запись…</span></div>
+  </div>
+
+  <!-- Режиссёрский пульт -->
+  <div class="panel director-panel">
+    <h3><span>Режиссёрский обзор мира (3200 × 720)</span><span class="badge" id="state-badge">Готов</span></h3>
+    <div class="world-overview"><canvas id="overview-canvas"></canvas></div>
+
+    <div class="controls">
+      <button id="btn-play">▶ Старт</button>
+      <button class="secondary" id="btn-reset">↺ В начало</button>
+      <input type="range" id="scrubber" min="0" max="10" step="0.01" value="0">
+      <div class="timecode" id="timecode">0.00 / 0.00s</div>
+      <select id="speed" title="Скорость воспроизведения">
+        <option value="0.5">0.5×</option>
+        <option value="1" selected>1×</option>
+        <option value="2">2×</option>
+      </select>
+      <label class="chk"><input type="checkbox" id="loop"> цикл</label>
+    </div>
+
+    <div class="timelines" id="timelines-ui"></div>
+    <div class="blackboard" id="blackboard"><span class="bb-title">Blackboard:</span></div>
+  </div>
+</div>
+
+<!-- Редактор сценария -->
+<div class="panel editor-panel">
+  <div class="editor-head">
+    <h3><span>Сценарий · декларативные команды на 3 дорожках</span></h3>
+    <button id="btn-apply">⚙ Применить сценарий</button>
+    <button class="ghost" id="btn-restore">Вернуть пример</button>
+  </div>
+  <div class="error-box" id="error-box"></div>
+  <textarea id="script-editor" spellcheck="false"></textarea>
+
+  <details>
+    <summary>📖 Справка по DSL и синтаксису</summary>
+    <div class="ref">
+      <div>
+        <b>Общие правила</b>
+        <ul>
+          <li>Секции: <code>=== МИР ===</code>, <code>=== ПЕРСОНАЖ ===</code>, <code>=== КАМЕРА ===</code>. Комментарии: <code>// текст</code>.</li>
+          <li>Строка = блок: сначала условия, затем команды. Команды блока выполняются последовательно, дорожка ждёт завершения каждой.</li>
+          <li>Условия: <code>[Флаг:Имя]</code> — ждать флаг; <code>[НетФлага:Имя]</code>; <code>[Время&gt;2.5]</code> (также <code>&gt;= &lt; &lt;=</code>).</li>
+          <li>Общие команды: <code>[Ждать:1.5]</code>, <code>[ВзвестиФлаг:Имя]</code> (или <code>[Флаг:Имя]</code> после команд), <code>[СбросФлага:Имя]</code>.</li>
+          <li><code>[Флаг:Имя]</code> в начале блока — условие ожидания; после команд — установка флага. <code>[ВзвестиФлаг:Имя]</code> — всегда установка.</li>
+        </ul>
+      </div>
+      <div>
+        <b>Дорожка МИР</b>
+        <ul>
+          <li><code>[Дверь:Кабинет|Коридор|Улица:открыть|закрыть]</code></li>
+          <li><code>[Лампа:Стол|Фонарь:вкл|выкл]</code></li>
+          <li><code>[Монитор:Ноутбук:вкл|выкл]</code></li>
+          <li><code>[Экран:Ноутбук:Ошибка404|Код|Пусто]</code></li>
+          <li><code>[Погода:дождь|ясно]</code></li>
+        </ul>
+      </div>
+      <div>
+        <b>Дорожка ПЕРСОНАЖ</b>
+        <ul>
+          <li><code>[ИдтиК:Точка]</code> — точки: Старт, Окно, Стол, Кофемашина, Улица, Фонарь (возвращает RUNNING, пока идёт).</li>
+          <li><code>[Скорость:260]</code> — px/сек (по умолчанию 220).</li>
+          <li><code>[Поза:Стоит|СмотритВЭкран|ПьетКофе|Фейспалм|Машет]</code></li>
+          <li><code>[Эмоция:ПарИзУшей|Сердце|Удивление|Вопрос:2]</code> — эффект на N сек.</li>
+          <li><code>[Сказать:Текст без двоеточий:2]</code> — реплика на N сек.</li>
+        </ul>
+      </div>
+      <div>
+        <b>Дорожка КАМЕРА</b>
+        <ul>
+          <li><code>[СледитьЗа:Герой:Зум:Упреждение]</code> — режим Follow, упреждение взгляда в px.</li>
+          <li><code>[Наезд:1.6:0.8]</code> — плавно зум до 1.6 за 0.8с.</li>
+          <li><code>[Фокус:Часы:1.5:0.8]</code> — режим Focus на объект (Часы, Ноутбук, Окно, Кофемашина, Фонарь, Улица).</li>
+          <li><code>[Кадр:Герой:Голова:1.8:0.6]</code> — крупный план головы героя.</li>
+          <li><code>[Кат:Улица:0.95]</code> — мгновенный монтажный переход в точку/объект.</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <details>
+    <summary>✅ Свод функциональных требований (из анализа диалога)</summary>
+    <ol class="req-list">
+      <li>Единый бесшовный мир (Scene Graph) с именованными зонами и опорными точками — без нарезки сцен.</li>
+      <li>Три параллельных таймлайна: Мир, Персонаж, Камера — в едином виртуальном времени.</li>
+      <li>Синхронизация через blackboard: флаги и условия ожидания (event-driven, без ручного подбора секунд).</li>
+      <li>Порядок вычисления дорожек: Мир → Персонаж → Камера (камера видит актуальные координаты).</li>
+      <li>Умная камера-демпфер: Follow с упреждением, Focus на объект, мгновенный Cut; окно 9:16 (X, Y, zoom).</li>
+      <li>Детерминированный seek(t): свободная перемотка, пригодность для покадрового рендера.</li>
+      <li>Два окна из одного источника: видоискатель 9:16 + режиссёрский обзор с рамкой камеры.</li>
+      <li>Скелетная анимация: походка, позы, эмоции-эффекты, реплики.</li>
+      <li>Интерактивный мир: двери, лампы, монитор с контентом, погода (дождь).</li>
+      <li>Редактор команд в UI: правка сценария без изменения кода, валидация с указанием строки.</li>
+      <li>Плеер: play/pause, сброс, скраббер, таймкод, скорость, цикл; клипы и плейхед на 3 дорожках.</li>
+      <li>Экспорт: PNG-кадр 1080×1920 и запись видео всего ролика (mp4 при поддержке браузера, иначе webm).</li>
+      <li>Один HTML-файл, чистый JavaScript + Canvas, работает полностью офлайн.</li>
+    </ol>
+  </details>
+</div>
+
+<script>
+'use strict';
+/* ============================================================
+ * 0. КОНСТАНТЫ МИРА (Scene Graph)
+ * ============================================================ */
+const WORLD = { w: 3200, h: 720, floor: 620 };
+const FPS = 60, DT = 1 / FPS;
+const BASE_CAM = { w: 405, h: 720 }; // окно 9:16 при zoom = 1
+
+const ZONES = [
+  { name: 'Кабинет', x0: 0,    x1: 820,  wall: '#2a3040', floorC: '#3a3348' },
+  { name: 'Коридор', x0: 820, x1: 1420, wall: '#262c38', floorC: '#33303e' },
+  { name: 'Кафе',    x0: 1420, x1: 2220, wall: '#332a33', floorC: '#3c2f35' },
+  { name: 'Улица',   x0: 2220, x1: 3200, wall: null,      floorC: '#2b3138' }
+];
+const POINTS = { 'Старт': 240, 'Окно': 200, 'Стол': 470, 'Кофемашина': 1880, 'Улица': 2750, 'Фонарь': 2560 };
+const OBJECTS = {
+  'Часы':       { x: 1120, y: 250 },
+  'Ноутбук':    { x: 565,  y: 470 },
+  'Окно':       { x: 220,  y: 310 },
+  'Кофемашина': { x: 1985, y: 470 },
+  'Фонарь':     { x: 2620, y: 300 },
+  'Улица':      { x: 2750, y: 460 }
+};
+const DOORS = { 'Кабинет': 820, 'Коридор': 1420, 'Улица': 2220 };
+
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const easeInOut = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+const hash = i => { const s = Math.sin(i * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
+
+/* ============================================================
+ * 1. ПОЗЫ ПЕРСОНАЖА (скелетные параметры)
+ *    lean — наклон корпуса, tilt — наклон головы,
+ *    aL/aR — углы плеча/локтя (от вертикали вниз, + вперёд)
+ * ============================================================ */
+const POSES = {
+  'Стоит':         { lean: .03, tilt: 0,   aL1: .12, aL2: .18, aR1: -.10, aR2: .16, cup: 0 },
+  'СмотритВЭкран': { lean: .20, tilt: .18, aL1: .85, aL2: .55, aR1: .95,  aR2: .50, cup: 0 },
+  'ПьетКофе':      { lean: .04, tilt: -.06,aL1: .15, aL2: .25, aR1: 2.30, aR2: 1.70, cup: 1 },
+  'Фейспалм':      { lean: .12, tilt: .38, aL1: .10, aL2: .15, aR1: 2.60, aR2: 1.05, cup: 0 },
+  'Машет':         { lean: -.04,tilt: -.10,aL1: .12, aL2: .18, aR1: 2.95, aR2: .35, cup: 0 }
+};
+const POSE_FIELDS = ['lean','tilt','aL1','aL2','aR1','aR2','cup'];
+function blendPose(a, b, k) {
+  const o = {};
+  for (const f of POSE_FIELDS) o[f] = lerp(POSES[a][f], POSES[b][f], k);
+  return o;
+}
+
+/* ============================================================
+ * 2. DSL: ПАРСЕР СЦЕНАРИЯ
+ * ============================================================ */
+const SECTION_MAP = { 'МИР': 'world', 'ПЕРСОНАЖ': 'actor', 'КАМЕРА': 'camera', 'WORLD': 'world', 'ACTOR': 'actor', 'CAMERA': 'camera' };
+const CMD_REGISTRY = {
+  common: ['Ждать','Флаг','ВзвестиФлаг','СбросФлага'],
+  world:  ['Дверь','Лампа','Монитор','Экран','Погода'],
+  actor:  ['ИдтиК','Скорость','Поза','Эмоция','Сказать'],
+  camera: ['СледитьЗа','Наезд','Фокус','Кадр','Кат']
+};
+const EMOTIONS = ['ПарИзУшей','Сердце','Удивление','Вопрос'];
+
+function parseScript(text) {
+  const tracks = { world: [], actor: [], camera: [] };
+  let cur = null;
+  const lines = text.split('\n');
+  for (let li = 0; li < lines.length; li++) {
+    let line = lines[li].replace(/\/\/.*$/, '').trim();
+    if (!line) continue;
+    const sec = line.match(/^===\s*([A-ZА-ЯЁ]+)\s*===$/i);
+    if (sec) {
+      const key = SECTION_MAP[sec[1].toUpperCase()];
+      if (!key) throw { line: li + 1, msg: 'Неизвестная секция: ' + sec[1] };
+      cur = key; continue;
+    }
+    if (!cur) throw { line: li + 1, msg: 'Команда вне секции (начните с === МИР === и т.п.)' };
+    const tokens = [...line.matchAll(/\[([^\[\]]+)\]/g)].map(m => m[1].trim());
+    if (!tokens.length) throw { line: li + 1, msg: 'Ожидались команды в квадратных скобках' };
+    const conds = [], actions = [];
+    for (const tk of tokens) {
+      const tm = tk.match(/^Время\s*(>=|<=|>|<)\s*([\d.]+)$/);
+      if (tm) { conds.push({ type: 'time', op: tm[1], val: parseFloat(tm[2]), raw: tk }); continue; }
+      const parts = tk.split(':').map(s => s.trim());
+      const name = parts[0], args = parts.slice(1);
+      if (name === 'Флаг' || name === 'НетФлага') {
+        if (!args[0]) throw { line: li + 1, msg: 'Условия/команда Флаг требует имя' };
+        // [Флаг:X] в начале блока (перед командами) — условие; после команд — установка
+        if (actions.length === 0 && name === 'Флаг') { conds.push({ type: 'flag', name: args[0], raw: tk }); continue; }
+        if (name === 'НетФлага' && actions.length === 0) { conds.push({ type: 'noflag', name: args[0], raw: tk }); continue; }
+        actions.push({ name, args, raw: tk }); continue;
+      }
+      if (!CMD_REGISTRY.common.includes(name) && !CMD_REGISTRY[cur].includes(name))
+        throw { line: li + 1, msg: `Команда «${name}» недоступна на дорожке ${cur.toUpperCase()}` };
+      validateCmd(name, args, li + 1);
+      actions.push({ name, args, raw: tk });
+    }
+    if (!actions.length) throw { line: li + 1, msg: 'Блок содержит только условия — добавьте команды' };
+    tracks[cur].push({ conds, actions, line: li + 1 });
+  }
+  return tracks;
+}
+function validateCmd(name, args, line) {
+  const need = (n) => { if (args.length < n) throw { line, msg: `«${name}»: не хватает аргументов (нужно ${n})` }; };
+  const oneOf = (v, list, what) => { if (!list.includes(v)) throw { line, msg: `«${name}»: неизвестн${what} «${v}». Доступно: ${list.join(', ')}` }; };
+  const num = (v) => { if (isNaN(parseFloat(v))) throw { line, msg: `«${name}»: ожидалось число, получено «${v}»` }; };
+  switch (name) {
+    case 'Ждать': need(1); num(args[0]); break;
+    case 'ВзвестиФлаг': case 'СбросФлага': need(1); break;
+    case 'ИдтиК': need(1); oneOf(args[0], Object.keys(POINTS), 'ая точка'); break;
+    case 'Скорость': need(1); num(args[0]); break;
+    case 'Поза': need(1); oneOf(args[0], Object.keys(POSES), 'ая поза'); break;
+    case 'Эмоция': need(2); oneOf(args[0], EMOTIONS, 'ая эмоция'); num(args[1]); break;
+    case 'Сказать': need(2); num(args[1]); break;
+    case 'Дверь': need(2); oneOf(args[0], Object.keys(DOORS), 'ая дверь'); oneOf(args[1], ['открыть','закрыть'], 'ое действие'); break;
+    case 'Лампа': need(2); oneOf(args[0], ['Стол','Фонарь'], 'ая лампа'); oneOf(args[1], ['вкл','выкл'], 'ое действие'); break;
+    case 'Монитор': need(2); oneOf(args[1], ['вкл','выкл'], 'ое действие'); break;
+    case 'Экран': need(2); oneOf(args[1], ['Ошибка404','Код','Пусто'], 'ый контент'); break;
+    case 'Погода': need(1); oneOf(args[0], ['дождь','ясно'], 'ая погода'); break;
+    case 'СледитьЗа': need(3); num(args[1]); num(args[2]); break;
+    case 'Наезд': need(2); num(args[0]); num(args[1]); break;
+    case 'Фокус': need(3);
+      if (!OBJECTS[args[0]] && !POINTS[args[0]]) throw { line, msg: `«Фокус»: неизвестный объект «${args[0]}»` };
+      num(args[1]); num(args[2]); break;
+    case 'Кадр': need(4); num(args[2]); num(args[3]); break;
+    case 'Кат': need(2);
+      if (!OBJECTS[args[0]] && !POINTS[args[0]]) throw { line, msg: `«Кат»: неизвестная точка «${args[0]}»` };
+      num(args[1]); break;
+  }
+}
+
+/* ============================================================
+ * 3. СИМУЛЯЦИЯ (event-driven) + ЗАПЕКАНИЕ КАДРОВ (детерминизм)
+ *    Симуляция идёт фиксированным шагом 1/60с и пишет снимок
+ *    состояния на каждый кадр. seek(t) = мгновенный доступ к
+ *    снимку — перемотка детерминирована и ничего не ломает.
+ * ============================================================ */
+function initialState() {
+  return {
+    actor: { x: POINTS['Старт'], dir: 1, moving: false, speed: 220, walkTarget: null,
+             pose: 'Стоит', posePrev: 'Стоит', poseT: 1, walkBlend: 0,
+             emotion: null, bubble: null },
+    cam: { x: POINTS['Старт'], y: 400, zoom: 1.2, mode: 'follow', lead: 0,
+           focus: null, zoomTween: null, cutT: -10 },
+    world: { doors: { 'Кабинет': 0, 'Коридор': 0, 'Улица': 0 },
+             doorTargets: { 'Кабинет': 0, 'Коридор': 0, 'Улица': 0 },
+             lampDesk: false, lampStreet: false, monitor: 'off', screen: 'Пусто',
+             rain: 0, rainTarget: 0 },
+    flags: new Set()
+  };
+}
+function condOk(c, s, t) {
+  if (c.type === 'flag') return s.flags.has(c.name);
+  if (c.type === 'noflag') return !s.flags.has(c.name);
+  const v = c.val;
+  return c.op === '>' ? t > v : c.op === '>=' ? t >= v : c.op === '<' ? t < v : t <= v;
+}
+function resolvePlace(name) {
+  if (OBJECTS[name]) return { x: OBJECTS[name].x, y: OBJECTS[name].y };
+  return { x: POINTS[name], y: 460 };
+}
+
+/* Исполнение одной команды. Возвращает 'done' | 'running'. */
+function execCommand(track, act, s, prog, t) {
+  const a = act.args, A = s.actor, C = s.cam, W = s.world;
+  switch (act.name) {
+    /* --- общие --- */
+    case 'Ждать': prog.t0 ??= t; return (t - prog.t0 >= parseFloat(a[0]) - 1e-9) ? 'done' : 'running';
+    case 'Флаг': case 'ВзвестиФлаг': s.flags.add(a[0]); return 'done';
+    case 'СбросФлага': s.flags.delete(a[0]); return 'done';
+    /* --- мир --- */
+    case 'Дверь': W.doorTargets[a[0]] = a[1] === 'открыть' ? 1 : 0; return 'done';
+    case 'Лампа': if (a[0] === 'Стол') W.lampDesk = a[1] === 'вкл'; else W.lampStreet = a[1] === 'вкл'; return 'done';
+    case 'Монитор': W.monitor = a[1] === 'вкл' ? 'on' : 'off'; return 'done';
+    case 'Экран': W.screen = a[1]; if (W.monitor === 'off') W.monitor = 'on'; return 'done';
+    case 'Погода': W.rainTarget = a[0] === 'дождь' ? 1 : 0; return 'done';
+    /* --- персонаж --- */
+    case 'Скорость': A.speed = parseFloat(a[0]); return 'done';
+    case 'ИдтиК': {
+      const tx = POINTS[a[0]]; A.walkTarget = a[0];
+      const dx = tx - A.x;
+      if (Math.abs(dx) < 2) { A.x = tx; A.moving = false; A.walkTarget = null; return 'done'; }
+      A.dir = dx > 0 ? 1 : -1; A.moving = true;
+      const step = A.speed * DT;
+      if (Math.abs(dx) <= step) { A.x = tx; A.moving = false; A.walkTarget = null; return 'done'; }
+      A.x += Math.sign(dx) * step; return 'running';
+    }
+    case 'Поза':
+      if (A.pose !== a[0]) { A.posePrev = A.pose; A.pose = a[0]; A.poseT = 0; }
+      return 'done';
+    case 'Эмоция': A.emotion = { type: a[0], t0: t, dur: parseFloat(a[1]) }; return 'done';
+    case 'Сказать': A.bubble = { text: a[0], t0: t, dur: parseFloat(a[1]) }; return 'done';
+    /* --- камера --- */
+    case 'СледитьЗа':
+      C.mode = 'follow'; C.lead = parseFloat(a[2]);
+      C.zoomTween = { from: C.zoom, to: parseFloat(a[1]), t0: t, dur: .5 };
+      return 'done';
+    case 'Наезд':
+      prog.t0 ??= t; prog.from ??= C.zoom;
+      C.zoomTween = null;
+      { const k = clamp((t - prog.t0) / parseFloat(a[1]), 0, 1);
+        C.zoom = lerp(prog.from, parseFloat(a[0]), easeInOut(k));
+        return k >= 1 ? 'done' : 'running'; }
+    case 'Фокус':
+      if (!prog.init) { C.mode = 'focus'; C.focus = resolvePlace(a[0]);
+        C.zoomTween = { from: C.zoom, to: parseFloat(a[1]), t0: t, dur: parseFloat(a[2]) }; prog.init = t; }
+      return (t - prog.init >= parseFloat(a[2])) ? 'done' : 'running';
+    case 'Кадр':
+      if (!prog.init) { C.mode = 'head';
+        C.zoomTween = { from: C.zoom, to: parseFloat(a[2]), t0: t, dur: parseFloat(a[3]) }; prog.init = t; }
+      return (t - prog.init >= parseFloat(a[3])) ? 'done' : 'running';
+    case 'Кат': {
+      const p = resolvePlace(a[0]);
+      C.mode = 'focus'; C.focus = p; C.zoom = parseFloat(a[1]); C.zoomTween = null;
+      const vw = BASE_CAM.w / C.zoom, vh = BASE_CAM.h / C.zoom;
+      C.x = clampCamX(p.x, vw); C.y = clampCamY(p.y, vh); C.cutT = t;
+      return 'done';
+    }
+  }
+  return 'done';
+}
+function clampCamX(x, vw) { return vw >= WORLD.w ? WORLD.w / 2 : clamp(x, vw / 2, WORLD.w - vw / 2); }
+function clampCamY(y, vh) { return vh >= WORLD.h ? WORLD.h / 2 : clamp(y, vh / 2, WORLD.h - vh / 2); }
+
+/* Динамика мира и камеры (пружинный демпфер) — вызывается каждый шаг. */
+function stepDynamics(s, t) {
+  const W = s.world, A = s.actor, C = s.cam;
+  for (const d in W.doors) W.doors[d] += (W.doorTargets[d] - W.doors[d]) * Math.min(1, DT * 4);
+  W.rain += (W.rainTarget - W.rain) * Math.min(1, DT * 1.2);
+  A.poseT = Math.min(1, A.poseT + DT / .3);
+  A.walkBlend += ((A.moving ? 1 : 0) - A.walkBlend) * Math.min(1, DT * 8);
+  if (C.zoomTween) {
+    const z = C.zoomTween, k = clamp((t - z.t0) / z.dur, 0, 1);
+    C.zoom = lerp(z.from, z.to, easeInOut(k));
+    if (k >= 1) C.zoomTween = null;
+  }
+  const vw = BASE_CAM.w / C.zoom, vh = BASE_CAM.h / C.zoom;
+  let tx = C.x, ty = C.y;
+  if (C.mode === 'follow') { tx = A.x + C.lead * A.dir; ty = WORLD.floor - vh * .24; }
+  else if (C.mode === 'head') { tx = A.x; ty = WORLD.floor - 150; }
+  else if (C.mode === 'focus' && C.focus) { tx = C.focus.x; ty = C.focus.y; }
+  const k = 1 - Math.exp(-6 * DT); // демпфер
+  C.x += (clampCamX(tx, vw) - C.x) * k;
+  C.y += (clampCamY(ty, vh) - C.y) * k;
+  C.x = clampCamX(C.x, vw); C.y = clampCamY(C.y, vh);
+}
+
+function makeRuntime(rules) { return { rules, ri: 0, ai: 0, prog: {}, done: rules.length === 0, waitStart: null, clip: null }; }
+
+function stepTrack(trackName, rt, s, t, clips) {
+  let guard = 0;
+  while (!rt.done && guard++ < 80) {
+    if (rt.ri >= rt.rules.length) { rt.done = true; break; }
+    const rule = rt.rules[rt.ri];
+    const ok = rule.conds.every(c => condOk(c, s, t));
+    if (!ok) {
+      if (rt.waitStart === null) rt.waitStart = t;
+      break; // RUNNING: ждём событие
+    }
+    if (rt.waitStart !== null) {
+      clips.push({ track: trackName, label: 'ждёт: ' + rule.conds.map(c => c.raw).join(' '), start: rt.waitStart, end: t, wait: true });
+      rt.waitStart = null;
+    }
+    const act = rule.actions[rt.ai];
+    if (!rt.clip) rt.clip = { track: trackName, label: act.raw, start: t, end: t, wait: false };
+    const res = execCommand(trackName, act, s, rt.prog, t);
+    if (res === 'running') break;
+    rt.clip.end = t; clips.push(rt.clip); rt.clip = null;
+    rt.prog = {}; rt.ai++;
+    if (rt.ai >= rule.actions.length) { rt.ri++; rt.ai = 0; }
+  }
+}
+
+function snapshot(s, t) {
+  const A = s.actor;
+  const pose = blendPose(A.posePrev, A.pose, easeInOut(A.poseT));
+  return {
+    t,
+    ax: A.x, dir: A.dir, moving: A.moving, poseName: A.pose, pose, walkBlend: A.walkBlend,
+    emotion: A.emotion && (t - A.emotion.t0 < A.emotion.dur) ? { ...A.emotion } : null,
+    bubble: A.bubble && (t - A.bubble.t0 < A.bubble.dur) ? { ...A.bubble } : null,
+    cam: { x: s.cam.x, y: s.cam.y, zoom: s.cam.zoom, cutT: s.cam.cutT },
+    doors: { ...s.world.doors }, lampDesk: s.world.lampDesk, lampStreet: s.world.lampStreet,
+    monitor: s.world.monitor, screen: s.world.screen, rain: s.world.rain,
+    flags: [...s.flags],
+    status: A.moving ? ('Идёт → ' + A.walkTarget) : ('Поза: ' + A.pose)
+  };
+}
+
+/* Запекание: прогон всей сцены фиксированным шагом. */
+function bake(tracks) {
+  const s = initialState();
+  const rts = { world: makeRuntime(tracks.world), actor: makeRuntime(tracks.actor), camera: makeRuntime(tracks.camera) };
+  const frames = []; let clips = [];
+  let t = 0, tail = 0;
+  const MAX_T = 120;
+  while (t < MAX_T) {
+    // порядок дорожек: Мир → Персонаж → Камера
+    for (const k of ['world', 'actor', 'camera']) stepTrack(k, rts[k], s, t, clips);
+    stepDynamics(s, t);
+    frames.push(snapshot(s, t));
+    const allDone = rts.world.done && rts.actor.done && rts.camera.done;
+    if (allDone) { tail += DT; if (tail >= .8) break; }
+    t += DT;
+  }
+  if (t >= MAX_T) throw { line: 0, msg: 'Сценарий не завершается за 120с — проверьте условия (взаимная блокировка флагов?)' };
+  for (const k in rts) if (rts[k].waitStart !== null)
+    clips.push({ track: k, label: 'ждёт (не дождались)', start: rts[k].waitStart, end: t, wait: true });
+  // === Пост-обработка клипов для наглядной дорожки ===
+  for (const k of ['world', 'actor', 'camera']) {
+    let list = clips.filter(c => c.track === k);
+    if (k === 'camera') list = list.filter(c => !c.wait); // у камеры режим действует и во время ожидания
+    list.sort((a, b) => a.start - b.start || (a.wait ? -1 : 1));
+    // 1) склеиваем мгновенные команды, исполненные в одном кадре
+    const merged = [];
+    for (const c of list) {
+      const prev = merged[merged.length - 1];
+      if (!c.wait && c.end - c.start < .05 && prev && !prev.wait && prev.end - prev.start < .05 && Math.abs(prev.start - c.start) < 1e-6) {
+        prev.label += ' · ' + c.label;
+      } else merged.push({ ...c });
+    }
+    // 2) мгновенную группу, за которой сразу стартует длительная команда, вписываем в неё
+    const out = [];
+    for (let i = 0; i < merged.length; i++) {
+      const c = merged[i], next = merged[i + 1];
+      if (!c.wait && c.end - c.start < .05 && next && !next.wait && Math.abs(next.start - c.start) < 1e-6) {
+        next.label = c.label + ' · ' + next.label;
+      } else out.push(c);
+    }
+    // 3) оставшиеся мгновенные: камера — растягиваем до следующей команды, остальные — короткая метка
+    for (let i = 0; i < out.length; i++) {
+      const c = out[i];
+      if (!c.wait && c.end - c.start < .05) {
+        const next = out.slice(i + 1).find(o => o.start > c.start + 1e-6);
+        c.end = k === 'camera' ? (next ? next.start : t) : Math.min(c.start + .35, next ? next.start : c.start + .35);
+        if (c.end <= c.start) c.end = c.start + .2;
+        c.stretched = true;
+      }
+    }
+    clips = clips.filter(c => c.track !== k).concat(out);
+  }
+  return { frames, clips, duration: frames.length * DT };
+}
+
+function getState(baked, t) {
+  const i = clamp(Math.round(t * FPS), 0, baked.frames.length - 1);
+  return baked.frames[i];
+}
+
+/* ============================================================
+ * 4. РЕНДЕР (Canvas 2D): один источник мира → два окна + экспорт
+ * ============================================================ */
+function rr(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function drawRain(ctx, x0, x1, y0, y1, t, intensity) {
+  if (intensity < .02) return;
+  const n = Math.floor(70 * intensity);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x0, y0, x1 - x0, y1 - y0); ctx.clip();
+  ctx.strokeStyle = 'rgba(140,180,255,' + (.35 * intensity) + ')';
+  ctx.lineWidth = 2;
+  const H = y1 - y0;
+  for (let i = 0; i < n; i++) {
+    const x = x0 + hash(i) * (x1 - x0);
+    const sp = 520 + hash(i + 99) * 320;
+    const y = y0 + ((t * sp + hash(i + 7) * 1000) % H);
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 5, y + 16 + hash(i + 3) * 10); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawWindow(ctx, x, y, w, h, s, t) {
+  const g = ctx.createLinearGradient(0, y, 0, y + h);
+  g.addColorStop(0, '#1a2440'); g.addColorStop(1, '#2c3a5e');
+  ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+  drawRain(ctx, x, x + w, y, y + h, t, s.rain);
+  ctx.strokeStyle = '#4a5570'; ctx.lineWidth = 6; ctx.strokeRect(x, y, w, h);
+  ctx.beginPath(); ctx.moveTo(x + w / 2, y); ctx.lineTo(x + w / 2, y + h);
+  ctx.moveTo(x, y + h / 2); ctx.lineTo(x + w, y + h / 2); ctx.lineWidth = 4; ctx.stroke();
+}
+
+function drawDoor(ctx, name, x, open) {
+  const top = 350, bot = WORLD.floor;
+  // проём
+  ctx.fillStyle = '#101018'; ctx.fillRect(x - 14, top, 28, bot - top);
+  // створка (уезжает вверх), видна только в проёме
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x - 14, top, 28, bot - top); ctx.clip();
+  const dy = -open * (bot - top - 6);
+  ctx.fillStyle = '#5d4a63'; ctx.fillRect(x - 12, top + dy, 24, bot - top);
+  ctx.fillStyle = '#7a6284'; ctx.fillRect(x - 12, top + dy, 24, 10);
+  ctx.fillStyle = '#c9a86a'; ctx.beginPath(); ctx.arc(x + 6, top + dy + 150, 3.5, 0, 7); ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle = '#3c3c50'; ctx.lineWidth = 3; ctx.strokeRect(x - 14, top, 28, bot - top);
+}
+
+function drawWorld(ctx, s, t) {
+  const F = WORLD.floor;
+  // фон за пределами мира (небо сверху, грунт снизу — чтобы отъезд камеры выглядел естественно)
+  ctx.fillStyle = '#10131d'; ctx.fillRect(-2000, -2000, WORLD.w + 4000, 2000);
+  ctx.fillStyle = '#1d2129'; ctx.fillRect(-2000, WORLD.h, WORLD.w + 4000, 2000);
+  ctx.fillStyle = '#0b0b12'; ctx.fillRect(-2000, 0, 2000, WORLD.h); ctx.fillRect(WORLD.w, 0, 2000, WORLD.h);
+  // потолочная лента интерьеров
+  ctx.fillStyle = '#161923'; ctx.fillRect(0, 0, 2220, 80);
+
+  // === УЛИЦА: небо, силуэты, фонарь, дерево, скамейка ===
+  const st = ZONES[3];
+  const sky = ctx.createLinearGradient(0, 0, 0, F);
+  sky.addColorStop(0, '#131a30'); sky.addColorStop(1, '#26314e');
+  ctx.fillStyle = sky; ctx.fillRect(st.x0, 0, st.x1 - st.x0, F);
+  ctx.fillStyle = '#1b2338';
+  [[2280, 240, 150], [2470, 300, 120], [2860, 200, 170], [3060, 280, 130]].forEach(([x, y, w]) => {
+    ctx.fillRect(x, y, w, F - y);
+    ctx.fillStyle = 'rgba(255,220,130,.14)';
+    for (let wy = y + 24; wy < F - 40; wy += 46)
+      for (let wx = x + 14; wx < x + w - 18; wx += 34)
+        if (hash(wx * wy) > .45) ctx.fillRect(wx, wy, 14, 18);
+    ctx.fillStyle = '#1b2338';
+  });
+  // фонарь
+  ctx.strokeStyle = '#3d4658'; ctx.lineWidth = 8;
+  ctx.beginPath(); ctx.moveTo(2620, F); ctx.lineTo(2620, 250); ctx.lineTo(2660, 250); ctx.stroke();
+  ctx.fillStyle = s.lampStreet ? '#ffe082' : '#4a5266';
+  rr(ctx, 2646, 240, 30, 20, 5); ctx.fill();
+  if (s.lampStreet) {
+    const g = ctx.createRadialGradient(2661, 260, 10, 2661, 260, 300);
+    g.addColorStop(0, 'rgba(255,224,130,.30)'); g.addColorStop(1, 'rgba(255,224,130,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.moveTo(2661, 255); ctx.lineTo(2540, F); ctx.lineTo(2790, F); ctx.closePath(); ctx.fill();
+  }
+  // дерево
+  ctx.fillStyle = '#3f3226'; ctx.fillRect(2960, 470, 22, F - 470);
+  ctx.fillStyle = '#2f4a35';
+  [[2971, 430, 62], [2930, 470, 44], [3015, 465, 46]].forEach(([x, y, r]) => { ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); });
+  // скамейка
+  ctx.fillStyle = '#4e4034'; ctx.fillRect(2800, 560, 120, 12);
+  ctx.fillRect(2806, 572, 10, F - 572); ctx.fillRect(2904, 572, 10, F - 572);
+  ctx.fillRect(2800, 520, 120, 8);
+
+  // === ИНТЕРЬЕРЫ ===
+  for (let zi = 0; zi < 3; zi++) {
+    const z = ZONES[zi];
+    ctx.fillStyle = z.wall; ctx.fillRect(z.x0, 80, z.x1 - z.x0, F - 80);
+    ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.fillRect(z.x0, 80, z.x1 - z.x0, 26); // тень потолка
+    // плинтус
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(z.x0, F - 12, z.x1 - z.x0, 12);
+  }
+  // стены-пилястры между зонами (с дверными проёмами)
+  for (const name in DOORS) {
+    const x = DOORS[name];
+    ctx.fillStyle = '#1e222e'; ctx.fillRect(x - 16, 80, 32, 350 - 80);
+    drawDoor(ctx, name, x, s.doors[name]);
+  }
+  // левая внешняя стена
+  ctx.fillStyle = '#1e222e'; ctx.fillRect(-20, 0, 24, F);
+
+  // --- Кабинет: окно, стол, ноутбук, лампа, постер ---
+  drawWindow(ctx, 130, 200, 190, 220, s, t);
+  // постер
+  ctx.fillStyle = '#3b4a6b'; rr(ctx, 690, 210, 90, 120, 6); ctx.fill();
+  ctx.fillStyle = '#8fa8d8'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('SHIP IT', 735, 265); ctx.font = '11px sans-serif'; ctx.fillText('🚀', 735, 295);
+  // стол
+  ctx.fillStyle = '#5a4632'; ctx.fillRect(430, 520, 240, 14);
+  ctx.fillRect(444, 534, 12, F - 534); ctx.fillRect(644, 534, 12, F - 534);
+  // ноутбук
+  ctx.fillStyle = '#22262e'; ctx.fillRect(520, 508, 90, 12); // база
+  ctx.fillStyle = '#161a22'; rr(ctx, 525, 440, 82, 70, 4); ctx.fill(); // крышка
+  if (s.monitor !== 'off') {
+    let scr = '#1c3a5e';
+    if (s.screen === 'Ошибка404') scr = '#4a1420';
+    else if (s.screen === 'Код') scr = '#12332a';
+    ctx.fillStyle = scr; ctx.fillRect(530, 445, 72, 60);
+    ctx.textAlign = 'center';
+    if (s.screen === 'Ошибка404') {
+      ctx.fillStyle = '#ff8a80'; ctx.font = 'bold 20px monospace'; ctx.fillText('404', 566, 472);
+      ctx.font = '9px monospace'; ctx.fillText('not found', 566, 488);
+    } else if (s.screen === 'Код') {
+      ctx.fillStyle = '#69f0ae'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
+      ['fn main() {', '  run();', '}', '// ok'].forEach((l, i) => ctx.fillText(l, 534, 456 + i * 12));
+    } else {
+      ctx.fillStyle = '#90caf9'; ctx.font = '9px monospace'; ctx.fillText('ready_', 566, 478);
+    }
+    // свечение экрана
+    const g = ctx.createRadialGradient(566, 475, 8, 566, 475, 120);
+    g.addColorStop(0, s.screen === 'Ошибка404' ? 'rgba(255,80,80,.16)' : 'rgba(120,190,255,.14)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(446, 355, 240, 240);
+  }
+  // настольная лампа
+  ctx.strokeStyle = '#4a5266'; ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(650, 520); ctx.lineTo(658, 478); ctx.lineTo(636, 462); ctx.stroke();
+  ctx.fillStyle = s.lampDesk ? '#ffe082' : '#4a5266';
+  ctx.beginPath(); ctx.arc(632, 458, 9, 0, 7); ctx.fill();
+  if (s.lampDesk) {
+    const g = ctx.createRadialGradient(632, 470, 6, 632, 470, 150);
+    g.addColorStop(0, 'rgba(255,224,130,.28)'); g.addColorStop(1, 'rgba(255,224,130,0)');
+    ctx.fillStyle = g; ctx.fillRect(490, 330, 290, 290);
+  }
+
+  // --- Коридор: часы, картины ---
+  ctx.fillStyle = '#eceff1'; ctx.beginPath(); ctx.arc(1120, 250, 46, 0, 7); ctx.fill();
+  ctx.strokeStyle = '#37474f'; ctx.lineWidth = 6; ctx.stroke();
+  ctx.strokeStyle = '#263238'; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(1120, 250);
+  ctx.lineTo(1120 + Math.sin(t * .8) * 32, 250 - Math.cos(t * .8) * 32); ctx.stroke(); // минутная
+  ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(1120, 250);
+  ctx.lineTo(1120 + Math.sin(t * .07 + 2) * 20, 250 - Math.cos(t * .07 + 2) * 20); ctx.stroke(); // часовая
+  ctx.fillStyle = '#37474f';
+  [[950, 240], [1290, 260]].forEach(([x, y]) => { rr(ctx, x - 30, y - 40, 60, 80, 4); ctx.fill(); });
+  ctx.fillStyle = '#5c6b8a';
+  [[950, 240], [1290, 260]].forEach(([x, y]) => { ctx.fillRect(x - 22, y - 32, 44, 64); });
+
+  // --- Кафе: окно, меню, стойка, кофемашина, подвесные лампы ---
+  drawWindow(ctx, 1470, 210, 180, 210, s, t);
+  ctx.fillStyle = '#25201c'; rr(ctx, 1760, 180, 190, 120, 8); ctx.fill();
+  ctx.fillStyle = '#ffcc80'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('☕ МЕНЮ', 1855, 210);
+  ctx.font = '11px sans-serif'; ctx.fillStyle = '#d7ccc8';
+  ctx.fillText('эспрессо · 120', 1855, 235); ctx.fillText('латте · 180', 1855, 255); ctx.fillText('раф · 210', 1855, 275);
+  // стойка
+  ctx.fillStyle = '#5d4037'; ctx.fillRect(1700, 500, 460, 22);
+  ctx.fillStyle = '#4e342e'; ctx.fillRect(1710, 522, 440, F - 522);
+  ctx.fillStyle = 'rgba(255,255,255,.05)'; ctx.fillRect(1710, 522, 440, 8);
+  // кофемашина
+  ctx.fillStyle = '#78909c'; rr(ctx, 1950, 430, 72, 70, 6); ctx.fill();
+  ctx.fillStyle = '#546e7a'; ctx.fillRect(1958, 445, 56, 18);
+  ctx.fillStyle = '#37474f'; ctx.fillRect(1975, 478, 22, 14);
+  ctx.fillStyle = '#ff7043'; ctx.beginPath(); ctx.arc(2010, 440, 4, 0, 7); ctx.fill();
+  // подвесные лампы
+  [1560, 1850, 2100].forEach(x => {
+    ctx.strokeStyle = '#3a3a48'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(x, 80); ctx.lineTo(x, 160); ctx.stroke();
+    ctx.fillStyle = '#ffb74d'; ctx.beginPath(); ctx.arc(x, 172, 12, 0, 7); ctx.fill();
+    const g = ctx.createRadialGradient(x, 180, 5, x, 180, 110);
+    g.addColorStop(0, 'rgba(255,183,77,.16)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(x - 110, 90, 220, 220);
+  });
+
+  // === ПОЛ (единая лента) ===
+  ctx.fillStyle = '#262b33'; ctx.fillRect(0, F, WORLD.w, WORLD.h - F);
+  for (const z of ZONES) { ctx.fillStyle = z.floorC; ctx.fillRect(z.x0, F, z.x1 - z.x0, 14); }
+  ctx.strokeStyle = '#4fc3f7'; ctx.lineWidth = 3; ctx.globalAlpha = .5;
+  ctx.beginPath(); ctx.moveTo(0, F); ctx.lineTo(WORLD.w, F); ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  // дождь на улице (поверх сцены)
+  drawRain(ctx, 2220, 3200, 0, F + 40, t, s.rain);
+  if (s.rain > .05) { // лужи-блики
+    ctx.fillStyle = 'rgba(140,180,255,' + (.12 * s.rain) + ')';
+    [[2350, 660, 60], [2700, 680, 90], [3000, 665, 70]].forEach(([x, y, w]) => {
+      ctx.beginPath(); ctx.ellipse(x, y, w, 6, 0, 0, 7); ctx.fill();
+    });
+  }
+}
+
+/* --- Скелетный персонаж --- */
+function drawActor(ctx, s, t) {
+  const F = WORLD.floor, p = s.pose, wb = s.walkBlend;
+  const phase = s.ax * .045;
+  const bounce = wb * Math.abs(Math.cos(phase)) * 4;
+  const breathe = Math.sin(t * 2) * 1.2 * (1 - wb);
+  ctx.save();
+  ctx.translate(s.ax, F);
+  // тень
+  ctx.fillStyle = 'rgba(0,0,0,.4)';
+  ctx.beginPath(); ctx.ellipse(0, 2, 30, 6, 0, 0, 7); ctx.fill();
+  ctx.scale(s.dir, 1);
+  ctx.translate(0, -bounce);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+  const hipY = -80;
+  // ноги: 2-звенные (бедро+голень), походка перекрывает позу
+  for (const side of [-1, 1]) {
+    const off = side > 0 ? 0 : Math.PI;
+    const swing = lerp(side * .07, Math.sin(phase + off) * .55, wb);
+    const knee = lerp(.06, Math.max(0, Math.sin(phase + off + .9)) * .9, wb);
+    const hx = side * 6;
+    const kx = hx + Math.sin(swing) * 40, ky = hipY + Math.cos(swing) * 40;
+    const fx = kx + Math.sin(swing - knee) * 40, fy = ky + Math.cos(swing - knee) * 40;
+    ctx.strokeStyle = side > 0 ? '#64b5f6' : '#90caf9'; ctx.lineWidth = 9;
+    ctx.beginPath(); ctx.moveTo(hx, hipY); ctx.lineTo(kx, ky); ctx.lineTo(fx, fy); ctx.stroke();
+  }
+  // корпус
+  const lean = p.lean;
+  const sx = Math.sin(lean) * 52, sy = hipY - Math.cos(lean) * 52 + breathe;
+  ctx.strokeStyle = '#ff7043'; ctx.lineWidth = 28;
+  ctx.beginPath(); ctx.moveTo(0, hipY); ctx.lineTo(sx, sy); ctx.stroke();
+  // руки
+  const walkArmL = Math.sin(phase + Math.PI) * .5, walkArmR = Math.sin(phase) * .5;
+  const arms = [
+    { a1: lerp(p.aL1, walkArmL, wb), a2: lerp(p.aL2, .3, wb), col: '#e64a19', back: true },
+    { a1: lerp(p.aR1, walkArmR, wb), a2: lerp(p.aR2, .3, wb), col: '#ff8a65', back: false }
+  ];
+  // живые микродвижения поз
+  if (wb < .5) {
+    if (s.poseName === 'ПьетКофе') arms[1].a2 += Math.sin(t * 3) * .16 * (1 - wb * 2);
+    if (s.poseName === 'Машет') arms[1].a2 += Math.sin(t * 9) * .38 * (1 - wb * 2);
+  }
+  const drawArm = (arm) => {
+    const ex = sx + Math.sin(arm.a1) * 26, ey = sy + Math.cos(arm.a1) * 26;
+    const hx = ex + Math.sin(arm.a1 + arm.a2) * 24, hy = ey + Math.cos(arm.a1 + arm.a2) * 24;
+    ctx.strokeStyle = arm.col; ctx.lineWidth = 8;
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.lineTo(hx, hy); ctx.stroke();
+    return [hx, hy];
+  };
+  drawArm(arms[0]); // дальняя рука
+  // голова
+  const hAng = lean + p.tilt;
+  const hx = sx + Math.sin(hAng) * 30, hy = sy - Math.cos(hAng) * 30;
+  ctx.fillStyle = '#ffcc80'; ctx.beginPath(); ctx.arc(hx, hy, 20, 0, 7); ctx.fill();
+  ctx.fillStyle = '#263238'; ctx.beginPath(); ctx.arc(hx + 9, hy - 3, 3.4, 0, 7); ctx.fill(); // глаз
+  // рот по позе
+  ctx.strokeStyle = '#8d6e63'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  if (s.poseName === 'Фейспалм') { ctx.arc(hx + 8, hy + 10, 4, Math.PI * 1.15, Math.PI * 1.85); }
+  else if (s.poseName === 'Машет' || s.poseName === 'ПьетКофе') { ctx.arc(hx + 8, hy + 6, 5, .2, Math.PI - .4); }
+  else { ctx.moveTo(hx + 4, hy + 9); ctx.lineTo(hx + 13, hy + 9); }
+  ctx.stroke();
+  const hand = drawArm(arms[1]); // ближняя рука
+  // чашка в руке
+  if (p.cup > .5 && wb < .5) {
+    ctx.fillStyle = '#eceff1'; rr(ctx, hand[0] - 7, hand[1] - 12, 15, 13, 3); ctx.fill();
+    ctx.strokeStyle = '#eceff1'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(hand[0] + 10, hand[1] - 6, 4, -Math.PI / 2, Math.PI / 2); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(hand[0], hand[1] - 15);
+    ctx.quadraticCurveTo(hand[0] + 4, hand[1] - 22, hand[0], hand[1] - 28); ctx.stroke();
+  }
+  ctx.restore();
+
+  // === ЭМОЦИИ (в мировых координатах, над головой) ===
+  if (s.emotion) {
+    const e = s.emotion, age = t - e.t0, k = age / e.dur;
+    const fade = k < .15 ? k / .15 : k > .8 ? (1 - k) / .2 : 1;
+    const headX = s.ax, headY = F - 165;
+    ctx.save(); ctx.globalAlpha = clamp(fade, 0, 1);
+    if (e.type === 'ПарИзУшей') {
+      for (const side of [-1, 1]) for (let i = 0; i < 3; i++) {
+        const ph = (age * 1.4 + i * .33) % 1;
+        ctx.fillStyle = 'rgba(230,230,240,' + (.7 * (1 - ph)) + ')';
+        ctx.beginPath();
+        ctx.arc(headX + side * (26 + ph * 10), headY - 4 - ph * 46, 5 + ph * 7, 0, 7); ctx.fill();
+      }
+    } else if (e.type === 'Сердце') {
+      ctx.fillStyle = '#ef5350'; ctx.font = 'bold 26px sans-serif'; ctx.textAlign = 'center';
+      for (let i = 0; i < 3; i++) {
+        const ph = (age * .9 + i * .33) % 1;
+        ctx.globalAlpha = clamp(fade, 0, 1) * (1 - ph);
+        ctx.fillText('♥', headX + Math.sin(ph * 6 + i) * 16 + (i - 1) * 20, headY - 14 - ph * 60);
+      }
+    } else if (e.type === 'Удивление' || e.type === 'Вопрос') {
+      const ch = e.type === 'Удивление' ? '!' : '?';
+      const bob = Math.abs(Math.sin(age * 6)) * 8;
+      ctx.fillStyle = e.type === 'Удивление' ? '#ffee58' : '#80deea';
+      ctx.font = 'bold 42px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(ch, headX + 30, headY - 22 - bob);
+    }
+    ctx.restore();
+  }
+  // === РЕПЛИКА ===
+  if (s.bubble) {
+    const b = s.bubble, age = t - b.t0;
+    const pop = Math.min(1, age / .18);
+    const fade = age > b.dur - .2 ? (b.dur - age) / .2 : 1;
+    ctx.save(); ctx.globalAlpha = clamp(fade, 0, 1);
+    ctx.font = '600 17px sans-serif';
+    const tw = ctx.measureText(b.text).width;
+    const bw = tw + 28, bh = 36;
+    const bx = s.ax - bw / 2, by = WORLD.floor - 240 - (1 - pop) * 10;
+    ctx.translate(s.ax, by + bh); ctx.scale(pop, pop); ctx.translate(-s.ax, -(by + bh));
+    ctx.fillStyle = '#fafafa'; rr(ctx, bx, by, bw, bh, 10); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(s.ax - 7, by + bh - 1); ctx.lineTo(s.ax + 7, by + bh - 1); ctx.lineTo(s.ax, by + bh + 10); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#263238'; ctx.textAlign = 'center'; ctx.fillText(b.text, s.ax, by + 24);
+    ctx.restore();
+  }
+}
+
+/* Отрисовка сцены в произвольное окно (мировые координаты → canvas). */
+function renderScene(ctx, cw, ch, view, s, t) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, cw, ch);
+  ctx.fillStyle = '#0b0b12'; ctx.fillRect(0, 0, cw, ch);
+  const sc = cw / view.w;
+  ctx.setTransform(sc, 0, 0, sc, -view.x * sc, -view.y * sc);
+  drawWorld(ctx, s, t);
+  drawActor(ctx, s, t);
+  // вспышка монтажного ката
+  const sinceCut = t - s.cam.cutT;
+  if (sinceCut >= 0 && sinceCut < .18) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = 'rgba(255,255,255,' + (.55 * (1 - sinceCut / .18)) + ')';
+    ctx.fillRect(0, 0, cw, ch);
+  }
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+}
+
+function camView(s) {
+  const vw = BASE_CAM.w / s.cam.zoom, vh = BASE_CAM.h / s.cam.zoom;
+  return { x: s.cam.x - vw / 2, y: s.cam.y - vh / 2, w: vw, h: vh };
+}
+
+/* Режиссёрский обзор: весь мир + рамка камеры + подписи зон и точек. */
+function renderOverview(ctx, cw, ch, s, t) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, cw, ch);
+  ctx.fillStyle = '#0e0e15'; ctx.fillRect(0, 0, cw, ch);
+  const sc = Math.min(cw / WORLD.w, ch / WORLD.h);
+  const ox = (cw - WORLD.w * sc) / 2, oy = (ch - WORLD.h * sc) / 2;
+  ctx.setTransform(sc, 0, 0, sc, ox, oy);
+  drawWorld(ctx, s, t);
+  drawActor(ctx, s, t);
+  // подписи зон
+  ctx.textAlign = 'center'; ctx.font = '600 30px sans-serif';
+  for (const z of ZONES) {
+    ctx.fillStyle = 'rgba(79,195,247,.75)';
+    ctx.fillText(z.name.toUpperCase(), (z.x0 + z.x1) / 2, 52);
+  }
+  // опорные точки
+  ctx.font = '20px monospace';
+  for (const name in POINTS) {
+    const x = POINTS[name];
+    ctx.strokeStyle = 'rgba(255,183,77,.8)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(x, WORLD.floor + 16); ctx.lineTo(x, WORLD.floor + 40); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,183,77,.85)';
+    ctx.fillText('⚑' + name, x, WORLD.floor + 66);
+  }
+  // рамка камеры 9:16
+  const v = camView(s);
+  ctx.fillStyle = 'rgba(79,195,247,.10)';
+  ctx.fillRect(v.x, v.y, v.w, v.h);
+  ctx.strokeStyle = '#4fc3f7'; ctx.lineWidth = 5; ctx.setLineDash([16, 9]);
+  ctx.strokeRect(v.x, v.y, v.w, v.h);
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#4fc3f7'; ctx.font = '600 22px monospace'; ctx.textAlign = 'left';
+  ctx.fillText('CAM ' + s.cam.zoom.toFixed(2) + '×', v.x + 8, Math.max(v.y - 10, 24));
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+}
+
+/* ============================================================
+ * 5. СЦЕНАРИЙ ПО УМОЛЧАНИЮ (пример из диалога, расширенный)
+ * ============================================================ */
+const DEFAULT_SCRIPT = `// ═══ ТАЙМЛАЙН 1: МИР ═══
+=== МИР ===
+[Время>1.2] [Лампа:Стол:вкл]
+[Время>2] [Монитор:Ноутбук:вкл] [Погода:дождь]
+[Флаг:ГеройУСтола] [Экран:Ноутбук:Ошибка404]
+[Флаг:ГеройИдетВКафе] [Дверь:Кабинет:открыть] [Дверь:Коридор:открыть]
+[Флаг:ГеройВКафе] [Дверь:Улица:открыть]
+[Флаг:ГеройНаУлице] [Лампа:Фонарь:вкл]
+
+// ═══ ТАЙМЛАЙН 2: ПЕРСОНАЖ ═══
+=== ПЕРСОНАЖ ===
+[Ждать:0.6] [ИдтиК:Стол] [Поза:СмотритВЭкран] [Флаг:ГеройУСтола]
+[Ждать:1.2] [Поза:Фейспалм] [Эмоция:ПарИзУшей:2.2] [Ждать:2.2]
+[ВзвестиФлаг:ГеройИдетВКафе] [Поза:Стоит] [ИдтиК:Кофемашина] [Флаг:ГеройВКафе]
+[Поза:ПьетКофе] [Эмоция:Сердце:1.6] [Ждать:2.4]
+[Поза:Стоит] [ИдтиК:Улица] [Флаг:ГеройНаУлице]
+[Поза:Машет] [Сказать:Какой день!:2] [Ждать:2.2]
+
+// ═══ ТАЙМЛАЙН 3: КАМЕРА ═══
+=== КАМЕРА ===
+[СледитьЗа:Герой:1.2:0]
+[Флаг:ГеройУСтола] [Кадр:Герой:Голова:1.8:0.7] [Ждать:2.6]
+[СледитьЗа:Герой:0.85:60]
+[Флаг:ГеройВКафе] [Наезд:1.35:0.8] [Ждать:2.2]
+[Фокус:Часы:1.6:0.8] [Ждать:1.0] [Кат:Улица:0.95]
+[Флаг:ГеройНаУлице] [СледитьЗа:Герой:1.25:30] [Наезд:1.5:1.0] [Ждать:1.5]`;
+
+/* ============================================================
+ * 6. UI: плеер, таймлайны, редактор, экспорт
+ * ============================================================ */
+function initUI() {
+  const camCanvas = document.getElementById('cam-canvas');
+  const ovCanvas = document.getElementById('overview-canvas');
+  const camCtx = camCanvas.getContext('2d');
+  const ovCtx = ovCanvas.getContext('2d');
+  const editor = document.getElementById('script-editor');
+  const errBox = document.getElementById('error-box');
+  const scrubber = document.getElementById('scrubber');
+  const btnPlay = document.getElementById('btn-play');
+  const tlContainer = document.getElementById('timelines-ui');
+  const bb = document.getElementById('blackboard');
+
+  let baked = null, currentTime = 0, isPlaying = false, lastTs = null;
+  let recording = null; // { recorder, canvas, ctx, chunks }
+  let lastFlagsKey = '';
+
+  editor.value = DEFAULT_SCRIPT;
+
+  function sizeOverview() {
+    const r = ovCanvas.parentElement.getBoundingClientRect();
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    ovCanvas.width = Math.max(300, Math.round(r.width * dpr));
+    ovCanvas.height = Math.max(120, Math.round(r.height * dpr));
+  }
+  window.addEventListener('resize', () => { sizeOverview(); render(); });
+
+  function buildTimelines() {
+    tlContainer.innerHTML = '';
+    const tracks = [
+      { key: 'world', title: '1. Мир', cls: 'world' },
+      { key: 'actor', title: '2. Персонаж', cls: 'actor' },
+      { key: 'camera', title: '3. Камера', cls: 'camera' }
+    ];
+    for (const tr of tracks) {
+      const row = document.createElement('div'); row.className = 'track';
+      const lbl = document.createElement('div'); lbl.className = 'track-label'; lbl.textContent = tr.title;
+      const bar = document.createElement('div'); bar.className = 'track-bar';
+      bar.addEventListener('click', e => {
+        const r = bar.getBoundingClientRect();
+        seek((e.clientX - r.left) / r.width * baked.duration);
+      });
+      const trackClips = baked.clips.filter(c => c.track === tr.key)
+        .sort((a, b) => (a.wait ? 0 : 1) - (b.wait ? 0 : 1) || a.start - b.start);
+      for (const c of trackClips) {
+        const el = document.createElement('div');
+        el.className = 'clip ' + (c.wait ? 'wait' : tr.cls);
+        el.style.left = (c.start / baked.duration * 100) + '%';
+        el.style.width = Math.max(.4, (c.end - c.start) / baked.duration * 100) + '%';
+        el.textContent = c.label;
+        el.title = c.label + '  [' + c.start.toFixed(2) + '–' + c.end.toFixed(2) + 's]';
+        bar.appendChild(el);
+      }
+      const ph = document.createElement('div'); ph.className = 'playhead';
+      bar.appendChild(ph);
+      row.appendChild(lbl); row.appendChild(bar);
+      tlContainer.appendChild(row);
+    }
+  }
+
+  function applyScript() {
+    try {
+      const tracks = parseScript(editor.value);
+      baked = bake(tracks);
+      errBox.style.display = 'none';
+      scrubber.max = baked.duration.toFixed(2);
+      buildTimelines();
+      stopPlay(); seek(0);
+    } catch (err) {
+      errBox.style.display = 'block';
+      errBox.textContent = err.line ? ('Строка ' + err.line + ': ' + err.msg) : ('Ошибка: ' + (err.msg || err));
+    }
+  }
+
+  function render() {
+    if (!baked) return;
+    const s = getState(baked, currentTime);
+    renderScene(camCtx, camCanvas.width, camCanvas.height, camView(s), s, currentTime);
+    renderOverview(ovCtx, ovCanvas.width, ovCanvas.height, s, currentTime);
+    if (recording) renderScene(recording.ctx, recording.canvas.width, recording.canvas.height, camView(s), s, currentTime);
+    // UI
+    scrubber.value = currentTime;
+    document.getElementById('timecode').textContent = currentTime.toFixed(2) + ' / ' + baked.duration.toFixed(2) + 's';
+    document.getElementById('zoom-badge').textContent = s.cam.zoom.toFixed(2) + '×';
+    document.getElementById('state-badge').textContent = s.status;
+    document.querySelectorAll('.playhead').forEach(ph => ph.style.left = (currentTime / baked.duration * 100) + '%');
+    const fk = s.flags.join('|');
+    if (fk !== lastFlagsKey) {
+      lastFlagsKey = fk;
+      bb.innerHTML = '<span class="bb-title">Blackboard:</span>';
+      if (!s.flags.length) {
+        const el = document.createElement('span'); el.className = 'flag off'; el.textContent = 'пусто';
+        bb.appendChild(el);
+      }
+      for (const f of s.flags) {
+        const el = document.createElement('span'); el.className = 'flag'; el.textContent = '⚑ ' + f;
+        bb.appendChild(el);
+      }
+    }
+  }
+
+  function seek(t) { currentTime = clamp(t, 0, baked ? baked.duration : 0); render(); }
+  function stopPlay() {
+    isPlaying = false; lastTs = null;
+    btnPlay.textContent = '▶ Старт';
+  }
+  function loop(ts) {
+    if (isPlaying && baked) {
+      if (lastTs !== null) {
+        const speed = recording ? 1 : parseFloat(document.getElementById('speed').value);
+        currentTime += (ts - lastTs) / 1000 * speed;
+        if (currentTime >= baked.duration) {
+          if (recording) { currentTime = baked.duration; render(); finishRecording(); stopPlay(); }
+          else if (document.getElementById('loop').checked) currentTime = 0;
+          else { currentTime = baked.duration; stopPlay(); }
+        }
+        render();
+      }
+      lastTs = ts;
+    }
+    requestAnimationFrame(loop);
+  }
+
+  btnPlay.addEventListener('click', () => {
+    if (recording) return;
+    if (isPlaying) stopPlay();
+    else {
+      if (currentTime >= baked.duration - .01) currentTime = 0;
+      isPlaying = true; lastTs = null; btnPlay.textContent = '⏸ Пауза';
+    }
+  });
+  document.getElementById('btn-reset').addEventListener('click', () => { if (!recording) { stopPlay(); seek(0); } });
+  scrubber.addEventListener('input', () => { if (!recording) seek(parseFloat(scrubber.value)); });
+  document.getElementById('btn-apply').addEventListener('click', () => { if (!recording) applyScript(); });
+  document.getElementById('btn-restore').addEventListener('click', () => {
+    if (recording) return;
+    editor.value = DEFAULT_SCRIPT; applyScript();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.target === editor || recording) return;
+    if (e.code === 'Space') { e.preventDefault(); btnPlay.click(); }
+    if (e.code === 'ArrowLeft') seek(currentTime - (e.shiftKey ? 1 : 1 / FPS));
+    if (e.code === 'ArrowRight') seek(currentTime + (e.shiftKey ? 1 : 1 / FPS));
+  });
+
+  /* --- Экспорт PNG-кадра 1080×1920 --- */
+  document.getElementById('btn-png').addEventListener('click', () => {
+    const c = document.createElement('canvas'); c.width = 1080; c.height = 1920;
+    const s = getState(baked, currentTime);
+    renderScene(c.getContext('2d'), 1080, 1920, camView(s), s, currentTime);
+    c.toBlob(b => downloadBlob(b, 'frame_' + currentTime.toFixed(2) + 's.png'), 'image/png');
+  });
+
+  /* --- Экспорт видео: детерминированное воспроизведение → MediaRecorder --- */
+  const btnRec = document.getElementById('btn-rec');
+  function pickMime() {
+    const cands = ['video/mp4;codecs="avc1.42E01E"', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+    for (const m of cands) if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m;
+    return null;
+  }
+  function downloadBlob(blob, name) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+  }
+  function finishRecording() {
+    if (!recording) return;
+    const rec = recording;
+    rec.recorder.stop(); // onstop соберёт файл
+  }
+  btnRec.addEventListener('click', () => {
+    if (recording) { // ручная остановка
+      stopPlay(); finishRecording(); return;
+    }
+    const mime = pickMime();
+    if (!mime) { alert('Браузер не поддерживает MediaRecorder — экспорт видео недоступен.'); return; }
+    const c = document.createElement('canvas'); c.width = 1080; c.height = 1920;
+    const ctx = c.getContext('2d');
+    const stream = c.captureStream(FPS);
+    const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 10_000_000 });
+    const chunks = [];
+    rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+    rec.onstop = () => {
+      const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+      downloadBlob(new Blob(chunks, { type: mime }), 'vertical_film.' + ext);
+      recording = null;
+      btnRec.textContent = '⏺ Экспорт видео';
+      document.getElementById('rec-status').style.display = 'none';
+      setControlsDisabled(false);
+    };
+    recording = { recorder: rec, canvas: c, ctx, chunks };
+    setControlsDisabled(true);
+    btnRec.textContent = '⏹ Стоп';
+    document.getElementById('rec-status').style.display = 'block';
+    document.getElementById('rec-text').textContent =
+      'Запись 1080×1920 · ' + (mime.includes('mp4') ? 'MP4' : 'WebM') + ' · ' + baked.duration.toFixed(1) + 's (в реальном времени)';
+    seek(0); rec.start(250);
+    isPlaying = true; lastTs = null; btnPlay.textContent = '⏸ Пауза';
+  });
+  function setControlsDisabled(d) {
+    ['btn-play', 'btn-reset', 'btn-apply', 'btn-restore', 'btn-png'].forEach(id => document.getElementById(id).disabled = d);
+    scrubber.disabled = d;
+    document.getElementById('speed').disabled = d;
+  }
+
+  sizeOverview();
+  applyScript();
+  requestAnimationFrame(loop);
+}
+
+if (typeof document !== 'undefined') initUI();
+</script>
+</body>
+</html>
